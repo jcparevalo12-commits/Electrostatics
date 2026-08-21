@@ -92,7 +92,7 @@
     border-bottom:1px solid var(--panel-border); padding-bottom:6px; margin-bottom:4px;
   }
 
-  /* CHARGE EDIT MODAL / POPUP PANEL */
+  /* CHARGE EDIT POPUP PANEL */
   #editPanel{
     top:16px; right:16px; padding:14px; width:260px; display:none; flex-direction:column; gap:10px; z-index:20;
   }
@@ -147,6 +147,8 @@
       <div class="input-group">
         <label for="distScale">100px =</label>
         <select id="distScale">
+          <option value="1e-9">1 nm</option>
+          <option value="1e-6">1 μm</option>
           <option value="1e-3">1 mm</option>
           <option value="1e-2" selected>1 cm</option>
           <option value="1">1 m</option>
@@ -173,7 +175,7 @@
       <div class="row"><span>potential V</span><span class="val" id="rPot">—</span></div>
     </div>
 
-    <!-- DYNAMIC POSITION EDITING PANEL -->
+    <!-- POSITION & CHARGE EDITING PANEL -->
     <div class="panel" id="editPanel">
       <div class="title" id="editTitle">Edit Charge #1</div>
       <div class="edit-row">
@@ -227,12 +229,14 @@
   resize();
 
   function getMetersPerPx() {
-    const metersPer100Px = parseFloat(document.getElementById('distScale').value);
+    const scaleSelect = document.getElementById('distScale');
+    const metersPer100Px = parseFloat(scaleSelect.value);
     return metersPer100Px / 100;
   }
 
   function getUnitLabel() {
-    return document.getElementById('distScale').options[document.getElementById('distScale').selectedIndex].text.split(' ')[1];
+    const scaleSelect = document.getElementById('distScale');
+    return scaleSelect.options[scaleSelect.selectedIndex].text.split(' ')[1];
   }
 
   function formatSI(num, unit) {
@@ -246,23 +250,6 @@
     if (abs >= 1e-6) return `${(num * 1e6).toFixed(2)} μ${unit}`;
     if (abs >= 1e-9) return `${(num * 1e9).toFixed(2)} n${unit}`;
     return `${(num * 1e12).toFixed(2)} p${unit}`;
-  }
-
-  function visualFieldAt(x, y, excludeId){
-    let ex = 0, ey = 0, v = 0;
-    for(const c of charges){
-      if(c.id === excludeId) continue;
-      const dx = x - c.x, dy = y - c.y;
-      const r2 = dx*dx + dy*dy;
-      const r = Math.sqrt(r2);
-      if(r < 6) continue;
-      const visQ = (c.qCoulombs > 0 ? 1 : -1) * c.visualMag;
-      const e = VISUAL_K * visQ / r2;
-      ex += e * dx / r;
-      ey += e * dy / r;
-      v += VISUAL_K * visQ / r;
-    }
-    return {ex, ey, v};
   }
 
   function physicalFieldAt(px, py){
@@ -280,6 +267,23 @@
       ex += e * dx / r;
       ey += e * dy / r;
       v += REAL_K * c.qCoulombs / r;
+    }
+    return {ex, ey, v};
+  }
+
+  function visualFieldAt(x, y, excludeId){
+    let ex = 0, ey = 0, v = 0;
+    for(const c of charges){
+      if(c.id === excludeId) continue;
+      const dx = x - c.x, dy = y - c.y;
+      const r2 = dx*dx + dy*dy;
+      const r = Math.sqrt(r2);
+      if(r < 6) continue;
+      const visQ = (c.qCoulombs > 0 ? 1 : -1) * c.visualMag;
+      const e = VISUAL_K * visQ / r2;
+      ex += e * dx / r;
+      ey += e * dy / r;
+      v += VISUAL_K * visQ / r;
     }
     return {ex, ey, v};
   }
@@ -370,7 +374,6 @@
       const r = 10 + Math.min(12, c.visualMag * 1.5);
       const color = isPos ? '#FF6B4A' : '#4AA8FF';
 
-      // Highlight selected charge
       if(selectedCharge && selectedCharge.id === c.id){
         ctx.strokeStyle = '#5EEAD4';
         ctx.lineWidth = 2;
@@ -398,31 +401,54 @@
     }
   }
 
-  // DRAW DISTANCE MEASUREMENT TAPE LINE
+  // MEASUREMENT DISPLAY: (dx, dy, r)
   function drawMeasurement(){
     if(!measureMode || !measureStart) return;
     const p1 = measureStart;
     const p2 = mouse.x > -1000 ? mouse : measureStart;
 
+    const pxDx = p2.x - p1.x;
+    const pxDy = p2.y - p1.y;
+    const pxR  = Math.hypot(pxDx, pxDy);
+
+    const mPerPx = getMetersPerPx();
+    const unitScale = parseFloat(document.getElementById('distScale').value) / 100;
+    const unitName = getUnitLabel();
+
+    const dx = (pxDx * mPerPx) / unitScale;
+    const dy = (pxDy * mPerPx) / unitScale;
+    const r  = (pxR  * mPerPx) / unitScale;
+
+    // Component Lines
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+
+    // dx line
+    ctx.strokeStyle = 'rgba(255, 107, 74, 0.6)';
+    ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p1.y); ctx.stroke();
+
+    // dy line
+    ctx.strokeStyle = 'rgba(74, 168, 255, 0.6)';
+    ctx.beginPath(); ctx.moveTo(p2.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+
+    // Direct r line
     ctx.strokeStyle = '#5EEAD4';
     ctx.lineWidth = 1.5;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.moveTo(p1.x, p1.y);
-    ctx.lineTo(p2.x, p2.y);
-    ctx.stroke();
     ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
 
-    // Calculate real distance
-    const pxDist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
-    const realDist = (pxDist * getMetersPerPx()) / (parseFloat(document.getElementById('distScale').value) / 100);
+    // Labels
     const midX = (p1.x + p2.x) / 2;
     const midY = (p1.y + p2.y) / 2;
 
     ctx.font = "11px 'IBM Plex Mono', monospace";
     ctx.fillStyle = '#5EEAD4';
     ctx.textAlign = 'center';
-    ctx.fillText(`${realDist.toFixed(2)} ${getUnitLabel()}`, midX, midY - 8);
+    ctx.fillText(`r = ${r.toFixed(2)} ${unitName}`, midX, midY - 20);
+    ctx.fillStyle = '#FF6B4A';
+    ctx.fillText(`Δx = ${dx.toFixed(2)} ${unitName}`, midX, midY - 8);
+    ctx.fillStyle = '#4AA8FF';
+    ctx.fillText(`Δy = ${dy.toFixed(2)} ${unitName}`, midX, midY + 4);
   }
 
   function updateReadout(){
@@ -462,7 +488,6 @@
     editPanel.classList.add('active');
   }
 
-  // Update position directly from edit panel inputs
   function updateChargeFromInputs(){
     if(!selectedCharge) return;
     const unitScale = parseFloat(document.getElementById('distScale').value) / 100;
@@ -589,7 +614,6 @@
     document.getElementById('hint').style.opacity = '0';
   });
 
-  // Toolbar setup
   const btnPos = document.getElementById('btnPos');
   const btnNeg = document.getElementById('btnNeg');
   const btnLines = document.getElementById('btnLines');
