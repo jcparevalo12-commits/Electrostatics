@@ -107,7 +107,7 @@
   #readout{
     left:16px; bottom:16px;
     padding:12px 16px;
-    min-width:220px;
+    min-width:240px;
   }
   #readout .row{
     display:flex; justify-content:space-between; gap:16px;
@@ -150,23 +150,33 @@
     transition:opacity .4s ease;
   }
 
-  .slider-group{
-    display:flex; align-items:center; gap:8px;
+  .input-group{
+    display:flex; align-items:center; gap:6px;
     padding:0 4px;
   }
-  .slider-group label{
+  .input-group label{
     font-family:'IBM Plex Mono', monospace;
     font-size:11px; color:var(--text-dim);
   }
-  input[type=range]{
-    width:90px; accent-color:var(--field);
+  .input-group input, .input-group select{
+    background:var(--bg);
+    color:var(--text);
+    border:1px solid var(--panel-border);
+    border-radius:4px;
+    padding:4px 6px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    outline:none;
+  }
+  .input-group input:focus, .input-group select:focus{
+    border-color:var(--field);
   }
   .divider{
     width:1px; height:22px; background:var(--panel-border);
     margin:0 4px;
   }
 
-  @media (max-width:720px){
+  @media (max-width:820px){
     header{ flex-direction:column; align-items:stretch; gap:10px; }
     .toolbar{ justify-content:center; }
     .brand{ justify-content:center; }
@@ -185,10 +195,30 @@
     <div class="toolbar">
       <button id="btnPos" class="pos-btn active">+ charge</button>
       <button id="btnNeg" class="neg-btn">− charge</button>
-      <div class="slider-group">
-        <label>|q|</label>
-        <input type="range" id="magSlider" min="1" max="10" value="4" step="1">
+      
+      <!-- EXACT NUMERIC VALUE & PREFIX SELECTION -->
+      <div class="input-group">
+        <label for="qVal">|q| =</label>
+        <input type="number" id="qVal" value="5" min="0.001" step="0.1" style="width: 55px;">
+        <select id="qUnit">
+          <option value="1e-12">pC</option>
+          <option value="1e-9" selected>nC</option>
+          <option value="1e-6">μC</option>
+          <option value="1e-3">mC</option>
+          <option value="1">C</option>
+        </select>
       </div>
+
+      <!-- DISTANCE SCALE SELECTION -->
+      <div class="input-group">
+        <label for="distScale">100px =</label>
+        <select id="distScale">
+          <option value="1e-3">1 mm</option>
+          <option value="1e-2" selected>1 cm</option>
+          <option value="1">1 m</option>
+        </select>
+      </div>
+
       <div class="divider"></div>
       <button id="btnLines" class="active">field lines</button>
       <button id="btnHeat">magnitude</button>
@@ -219,17 +249,19 @@
 (function(){
   const canvas = document.getElementById('canvas');
   const ctx = canvas.getContext('2d');
-  const K = 8990; // scaled Coulomb constant for visual field strengths (not SI-literal)
 
-  let charges = []; // {x,y,q,id}
+  // CONSTANTS
+  const REAL_K = 8.98755e9; // Real Coulomb's Constant (N·m²/C²)
+  const VISUAL_K = 8990;   // Normalized K constant for standard canvas rendering
+
+  let charges = []; // {x, y, qCoulombs, displayVal, displayUnit, id}
   let nextId = 1;
-  let mode = 'pos'; // 'pos' | 'neg'
-  let magnitude = 4;
+  let mode = 'pos';
   let showLines = true;
   let showHeat = false;
   let showTest = false;
-  let testCharge = null; // {x,y}
-  let dragging = null; // charge being dragged, or 'test'
+  let testCharge = null;
+  let dragging = null;
   let mouse = {x:-9999, y:-9999};
   let flowOffset = 0;
   let dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -243,20 +275,61 @@
   window.addEventListener('resize', resize);
   resize();
 
-  function fieldAt(x, y, excludeId){
+  // Helper: Format large/small physical numbers cleanly with standard engineering units
+  function formatSI(num, unit) {
+    if (Math.abs(num) === 0) return `0 ${unit}`;
+    const abs = Math.abs(num);
+    if (abs >= 1e9)  return `${(num / 1e9).toFixed(2)} G${unit}`;
+    if (abs >= 1e6)  return `${(num / 1e6).toFixed(2)} M${unit}`;
+    if (abs >= 1e3)  return `${(num / 1e3).toFixed(2)} k${unit}`;
+    if (abs >= 1)    return `${num.toFixed(2)} ${unit}`;
+    if (abs >= 1e-3) return `${(num * 1e3).toFixed(2)} m${unit}`;
+    if (abs >= 1e-6) return `${(num * 1e6).toFixed(2)} μ${unit}`;
+    if (abs >= 1e-9) return `${(num * 1e9).toFixed(2)} n${unit}`;
+    return `${(num * 1e12).toFixed(2)} p${unit}`;
+  }
+
+  // Visual Field Calculation (Pixel Space)
+  function visualFieldAt(x, y, excludeId){
     let ex = 0, ey = 0, v = 0;
     for(const c of charges){
       if(c.id === excludeId) continue;
       const dx = x - c.x, dy = y - c.y;
       const r2 = dx*dx + dy*dy;
       const r = Math.sqrt(r2);
-      if(r < 6){ continue; }
-      const e = K * c.q / r2;
+      if(r < 6) continue;
+      
+      // Normalized visual charge magnitude (-10 to +10 range for visual rendering)
+      const visQ = (c.qCoulombs > 0 ? 1 : -1) * c.visualMag;
+      const e = VISUAL_K * visQ / r2;
       ex += e * dx / r;
       ey += e * dy / r;
-      v += K * c.q / r;
+      v += VISUAL_K * visQ / r;
     }
     return {ex, ey, v};
+  }
+
+  // Exact Physical SI Field Calculation
+  function physicalFieldAt(px, py){
+    let ex = 0, ey = 0, v = 0;
+    
+    // Scale: distance in meters per pixel
+    const metersPer100Px = parseFloat(document.getElementById('distScale').value);
+    const metersPerPx = metersPer100Px / 100;
+
+    for(const c of charges){
+      const dx = (px - c.x) * metersPerPx;
+      const dy = (py - c.y) * metersPerPx;
+      const r2 = dx*dx + dy*dy;
+      const r = Math.sqrt(r2);
+      if(r === 0) continue;
+
+      const e = REAL_K * c.qCoulombs / r2;
+      ex += e * dx / r;
+      ey += e * dy / r;
+      v += REAL_K * c.qCoulombs / r;
+    }
+    return {ex, ey, v, metersPerPx};
   }
 
   function traceStreamline(startX, startY, sign){
@@ -267,13 +340,13 @@
     const rect = canvas.getBoundingClientRect();
     for(let i=0;i<maxSteps;i++){
       pts.push({x,y});
-      const {ex,ey} = fieldAt(x,y);
+      const {ex,ey} = visualFieldAt(x,y);
       const mag = Math.hypot(ex,ey);
       if(mag < 1e-6) break;
       x += sign * step * ex/mag;
       y += sign * step * ey/mag;
       if(x < -20 || x > rect.width+20 || y < -20 || y > rect.height+20) { pts.push({x,y}); break; }
-      // terminate if very close to another charge (opposite-ish sign, field line "absorbed")
+      
       let hit = false;
       for(const c of charges){
         if(Math.hypot(x-c.x, y-c.y) < 14){ hit = true; break; }
@@ -304,7 +377,7 @@
     if(charges.length === 0) return;
     for(let x=0; x<rect.width; x+=cell){
       for(let y=0; y<rect.height; y+=cell){
-        const {ex,ey} = fieldAt(x+cell/2, y+cell/2);
+        const {ex,ey} = visualFieldAt(x+cell/2, y+cell/2);
         const mag = Math.hypot(ex,ey);
         const t = Math.min(1, Math.log(1+mag/40) / 6);
         if(t < 0.02) continue;
@@ -319,10 +392,7 @@
     const N = 16;
     ctx.lineWidth = 1.4;
     for(const c of charges){
-      if(c.q === 0) continue;
-      const sign = c.q > 0 ? 1 : -1;
-      // only trace outward from positive charges (lines terminate at negatives / infinity)
-      if(c.q < 0) continue;
+      if(c.qCoulombs === 0 || c.qCoulombs < 0) continue;
       for(let i=0;i<N;i++){
         const angle = (i/N) * Math.PI * 2;
         const sx = c.x + Math.cos(angle)*12;
@@ -340,7 +410,7 @@
         ctx.lineDashOffset = -flowOffset;
         ctx.stroke();
         ctx.setLineDash([]);
-        // arrowhead partway along
+
         const mid = pts[Math.min(pts.length-1, Math.floor(pts.length*0.35))];
         const midNext = pts[Math.min(pts.length-1, Math.floor(pts.length*0.35)+2)];
         if(mid && midNext){
@@ -360,8 +430,8 @@
 
   function drawCharges(){
     for(const c of charges){
-      const isPos = c.q > 0;
-      const r = 10 + Math.abs(c.q)*1.1;
+      const isPos = c.qCoulombs > 0;
+      const r = 10 + Math.min(12, c.visualMag * 1.5);
       const color = isPos ? '#FF6B4A' : '#4AA8FF';
       const glow = ctx.createRadialGradient(c.x,c.y,0,c.x,c.y,r*2.4);
       glow.addColorStop(0, color+'55');
@@ -382,16 +452,18 @@
       if(isPos){ ctx.moveTo(c.x, c.y-4); ctx.lineTo(c.x, c.y+4); }
       ctx.stroke();
 
+      // DISPLAY EXACT TYPED UNIT (e.g., +5 nC)
       ctx.font = "10px 'IBM Plex Mono', monospace";
       ctx.fillStyle = '#7A8BA6';
       ctx.textAlign = 'center';
-      ctx.fillText(`${c.q>0?'+':''}${c.q}q`, c.x, c.y + r + 14);
+      const signStr = isPos ? '+' : '-';
+      ctx.fillText(`${signStr}${c.displayVal} ${c.displayUnit}`, c.x, c.y + r + 14);
     }
   }
 
   function drawTestCharge(){
     if(!showTest || !testCharge) return;
-    const {ex,ey} = fieldAt(testCharge.x, testCharge.y, -1);
+    const {ex,ey} = visualFieldAt(testCharge.x, testCharge.y, -1);
     const mag = Math.hypot(ex,ey);
     ctx.fillStyle = '#E6EDF7';
     ctx.beginPath(); ctx.arc(testCharge.x, testCharge.y, 6, 0, Math.PI*2); ctx.fill();
@@ -425,17 +497,25 @@
     const rMag = document.getElementById('rMag');
     const rDir = document.getElementById('rDir');
     const rPot = document.getElementById('rPot');
-    if(mouse.x < -1000){
+
+    if(mouse.x < -1000 || charges.length === 0){
       rPos.textContent = '—'; rMag.textContent = '—'; rDir.textContent = '—'; rPot.textContent = '—';
       return;
     }
-    const {ex,ey,v} = fieldAt(mouse.x, mouse.y);
-    const mag = Math.hypot(ex,ey);
-    const dir = (Math.atan2(ey,ex) * 180/Math.PI).toFixed(1);
-    rPos.textContent = `(${mouse.x.toFixed(0)}, ${mouse.y.toFixed(0)})`;
-    rMag.textContent = mag > 1000 ? mag.toExponential(2) : mag.toFixed(1);
+
+    const {ex, ey, v, metersPerPx} = physicalFieldAt(mouse.x, mouse.y);
+    const mag = Math.hypot(ex, ey);
+    const dir = (Math.atan2(ey, ex) * 180 / Math.PI).toFixed(1);
+
+    // Format position using current selected distance unit scale
+    const distUnitLabel = document.getElementById('distScale').options[document.getElementById('distScale').selectedIndex].text.split(' ')[1];
+    const xDist = (mouse.x * metersPerPx) / (parseFloat(document.getElementById('distScale').value) / 100);
+    const yDist = (mouse.y * metersPerPx) / (parseFloat(document.getElementById('distScale').value) / 100);
+
+    rPos.textContent = `(${xDist.toFixed(1)}, ${yDist.toFixed(1)}) ${distUnitLabel}`;
+    rMag.textContent = formatSI(mag, 'N/C');
     rDir.textContent = `${dir}°`;
-    rPot.textContent = Math.abs(v) > 1000 ? v.toExponential(2) : v.toFixed(1);
+    rPot.textContent = formatSI(v, 'V');
   }
 
   function frame(){
@@ -453,7 +533,7 @@
     requestAnimationFrame(frame);
   }
 
-  // --- interaction ---
+  // --- INTERACTION ---
   function getPos(evt){
     const rect = canvas.getBoundingClientRect();
     const t = evt.touches ? evt.touches[0] : evt;
@@ -463,10 +543,32 @@
   function hitTest(x,y){
     for(let i=charges.length-1;i>=0;i--){
       const c = charges[i];
-      const r = 10 + Math.abs(c.q)*1.1;
+      const r = 10 + Math.min(12, c.visualMag * 1.5);
       if(Math.hypot(x-c.x,y-c.y) <= r+4) return c;
     }
     return null;
+  }
+
+  function createCharge(x, y) {
+    const valInput = parseFloat(document.getElementById('qVal').value) || 1;
+    const unitSelect = document.getElementById('qUnit');
+    const unitMultiplier = parseFloat(unitSelect.value);
+    const unitText = unitSelect.options[unitSelect.selectedIndex].text;
+    
+    const sign = mode === 'pos' ? 1 : -1;
+    const qCoulombs = sign * valInput * unitMultiplier;
+    
+    // Map visual magnitude smoothly (logarithmic visual scaling)
+    const visualMag = Math.max(1, Math.min(10, Math.log10(valInput) * 2 + 4));
+
+    return {
+      x, y,
+      qCoulombs,
+      displayVal: valInput,
+      displayUnit: unitText,
+      visualMag,
+      id: nextId++
+    };
   }
 
   let didDrag = false;
@@ -500,7 +602,6 @@
   });
 
   window.addEventListener('mouseup', ()=>{ dragging = null; });
-
   canvas.addEventListener('mouseleave', ()=>{ mouse = {x:-9999,y:-9999}; });
 
   canvas.addEventListener('click', (e)=>{
@@ -511,37 +612,36 @@
       testCharge = {x,y};
       return;
     }
-    const q = mode === 'pos' ? magnitude : -magnitude;
-    charges.push({x,y,q,id:nextId++});
+    charges.push(createCharge(x, y));
     document.getElementById('hint').style.opacity = '0';
   });
 
-  // touch support
+  // Touch support
   canvas.addEventListener('touchstart', (e)=>{
     e.preventDefault();
     const {x,y} = getPos(e);
     const hit = hitTest(x,y);
     if(hit){ dragging = hit; return; }
-    const q = mode === 'pos' ? magnitude : -magnitude;
-    charges.push({x,y,q,id:nextId++});
+    charges.push(createCharge(x, y));
     document.getElementById('hint').style.opacity = '0';
   }, {passive:false});
+
   canvas.addEventListener('touchmove', (e)=>{
     e.preventDefault();
     const {x,y} = getPos(e);
     mouse = {x,y};
     if(dragging){ dragging.x = x; dragging.y = y; }
   }, {passive:false});
+
   canvas.addEventListener('touchend', ()=>{ dragging = null; });
 
-  // toolbar
+  // Toolbar UI logic
   const btnPos = document.getElementById('btnPos');
   const btnNeg = document.getElementById('btnNeg');
   const btnLines = document.getElementById('btnLines');
   const btnHeat = document.getElementById('btnHeat');
   const btnTest = document.getElementById('btnTest');
   const btnClear = document.getElementById('btnClear');
-  const magSlider = document.getElementById('magSlider');
 
   btnPos.addEventListener('click', ()=>{ mode='pos'; btnPos.classList.add('active'); btnNeg.classList.remove('active'); });
   btnNeg.addEventListener('click', ()=>{ mode='neg'; btnNeg.classList.add('active'); btnPos.classList.remove('active'); });
@@ -553,12 +653,17 @@
     if(!showTest) testCharge = null;
   });
   btnClear.addEventListener('click', ()=>{ charges = []; testCharge = null; });
-  magSlider.addEventListener('input', ()=>{ magnitude = parseInt(magSlider.value,10); });
 
-  // seed with a simple dipole so it's not empty on load
+  // Default Dipole initialization
   const rect0 = canvas.getBoundingClientRect();
-  charges.push({x: rect0.width*0.38, y: rect0.height*0.5, q: 5, id: nextId++});
-  charges.push({x: rect0.width*0.62, y: rect0.height*0.5, q: -5, id: nextId++});
+  charges.push({
+    x: rect0.width * 0.38, y: rect0.height * 0.5,
+    qCoulombs: 5e-9, displayVal: 5, displayUnit: 'nC', visualMag: 5, id: nextId++
+  });
+  charges.push({
+    x: rect0.width * 0.62, y: rect0.height * 0.5,
+    qCoulombs: -5e-9, displayVal: 5, displayUnit: 'nC', visualMag: 5, id: nextId++
+  });
 
   requestAnimationFrame(frame);
 })();
