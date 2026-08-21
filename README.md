@@ -2,10 +2,6 @@
 
 An interactive point-charge electric field simulator. Place positive and negative charges, watch field lines trace themselves in real time, and probe the field with a test charge.
 
-**[Live demo →](#)** *(add your GitHub Pages link here once deployed)*
-
-![screenshot placeholder](docs/screenshot.png)
-
 ## Features
 
 - Click to place positive/negative point charges, drag to move them, alt-click to delete
