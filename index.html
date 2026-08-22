@@ -173,6 +173,7 @@
       <div class="row"><span>|E| field</span><span class="val" id="rMag">—</span></div>
       <div class="row"><span>direction</span><span class="val" id="rDir">—</span></div>
       <div class="row"><span>potential V</span><span class="val" id="rPot">—</span></div>
+      <div class="row"><span>F_net</span><span class="val" id="rForce">—</span></div>
     </div>
 
     <!-- POSITION & CHARGE EDITING PANEL -->
@@ -253,7 +254,7 @@
     return `${(num * 1e12).toFixed(2)} p${unit}`;
   }
 
-  function physicalFieldAt(px, py){
+  function physicalFieldAt(px, py, exclude Id){
     let ex = 0, ey = 0, v = 0;
     const metersPerPx = getMetersPerPx();
 
