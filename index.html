@@ -461,19 +461,7 @@
 
     if(mouse.x < -1000 || charges.length === 0){
       rPos.textContent = '—'; rMag.textContent = '—'; rDir.textContent = '—'; rPot.textContent = '—';
-    if(selectedChargeId){
-  const sel = charges.find(c => c.id === selectedChargeId);
-  if(sel){
-    const field = physicalFieldAt(sel.x, sel.y, sel.id);
-    const fx = sel.qCoulombs * field.ex;
-    const fy = sel.qCoulombs * field.ey;
-    const fMag = Math.hypot(fx, fy);
-    const fDir = (Math.atan2(fy, fx) * 180 / Math.PI).toFixed(1);
-    document.getElementById('rForce').textContent = `${formatSI(fMag, 'N')} @ ${fDir}°`;
-  }
-} else {
-  document.getElementById('rForce').textContent = '—';
-}
+    
       return;
     }
 
@@ -490,6 +478,20 @@
     rDir.textContent = `${dir}°`;
     rPot.textContent = formatSI(v, 'V');
   }
+
+    if(selectedChargeId){
+  const sel = charges.find(c => c.id === selectedChargeId);
+      if(sel){
+    const field = physicalFieldAt(sel.x, sel.y, sel.id);
+    const fx = sel.qCoulombs * field.ex;
+    const fy = sel.qCoulombs * field.ey;
+    const fMag = Math.hypot(fx, fy);
+    const fDir = (Math.atan2(fy, fx) * 180 / Math.PI).toFixed(1);
+    document.getElementById('rForce').textContent = `${formatSI(fMag, 'N')} @ ${fDir}°`;
+  }
+} else {
+  document.getElementById('rForce').textContent = '—';
+}
 
   function openEditPanel(c){
     selectedCharge = c;
