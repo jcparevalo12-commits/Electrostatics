@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Coulomb — Electrostatic Field Visualizer</title>
+<title>Electrostatic Field Visualizer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -215,6 +215,7 @@
   let selectedCharge = null;
   
   let dragging = null;
+  let selectedChargeId = null;
   let mouse = {x:-9999, y:-9999};
   let flowOffset = 0;
   let dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -459,6 +460,19 @@
 
     if(mouse.x < -1000 || charges.length === 0){
       rPos.textContent = '—'; rMag.textContent = '—'; rDir.textContent = '—'; rPot.textContent = '—';
+    if(selectedChargeId){
+  const sel = charges.find(c => c.id === selectedChargeId);
+  if(sel){
+    const field = physicalFieldAt(sel.x, sel.y, sel.id);
+    const fx = sel.qCoulombs * field.ex;
+    const fy = sel.qCoulombs * field.ey;
+    const fMag = Math.hypot(fx, fy);
+    const fDir = (Math.atan2(fy, fx) * 180 / Math.PI).toFixed(1);
+    document.getElementById('rForce').textContent = `${formatSI(fMag, 'N')} @ ${fDir}°`;
+  }
+} else {
+  document.getElementById('rForce').textContent = '—';
+}
       return;
     }
 
@@ -569,6 +583,10 @@
     }
 
     const hit = hitTest(x,y);
+    if(hit){
+  selectedChargeId = hit.id;
+  return;
+}
     if(hit){
       if(e.altKey){
         charges = charges.filter(c=>c.id!==hit.id);
