@@ -589,10 +589,6 @@
 
     const hit = hitTest(x,y);
     if(hit){
-  selectedChargeId = hit.id;
-  return;
-}
-    if(hit){
       if(e.altKey){
         charges = charges.filter(c=>c.id!==hit.id);
         if(selectedCharge && selectedCharge.id === hit.id){
@@ -600,10 +596,11 @@
         }
         return;
       }
+      selectedChargeId = hit.id;
+      openEditPanel(hit);
       dragging = hit;
       return;
-    }
-  });
+    });
 
   canvas.addEventListener('mousemove', (e)=>{
     const {x,y} = getPos(e);
