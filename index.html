@@ -467,7 +467,6 @@ document.getElementById('rForce');
       rPos.textContent = '—'; rMag.textContent = '—'; rDir.textContent = '—'; rPot.textContent = '—'; rForce.textContent = '—';
     
       return;
-    }
 
     const {ex, ey, v} = physicalFieldAt(mouse.x, mouse.y);
     const mag = Math.hypot(ex, ey);
@@ -495,6 +494,7 @@ document.getElementById('rForce');
   }
 } else {
   document.getElementById('rForce').textContent = '—';
+}
 }
 
   function openEditPanel(c){
