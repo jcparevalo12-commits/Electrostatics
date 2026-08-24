@@ -455,19 +455,17 @@
     ctx.fillText(`Δy = ${dy.toFixed(2)} ${unitName}`, midX, midY + 4);
   }
 
+
   function updateReadout(){
-    const rPos = document.getElementById('rPos');
-    const rMag = document.getElementById('rMag');
-    const rDir = document.getElementById('rDir');
-    const rPot = document.getElementById('rPot');
-    const rForce =
-document.getElementById('rForce');
+  const rPos = document.getElementById('rPos');
+  const rMag = document.getElementById('rMag');
+  const rDir = document.getElementById('rDir');
+  const rPot = document.getElementById('rPot');
+  const rForce = document.getElementById('rForce');
 
-    if(mouse.x < -1000 || charges.length === 0){
-      rPos.textContent = '—'; rMag.textContent = '—'; rDir.textContent = '—'; rPot.textContent = '—'; rForce.textContent = '—';
-    
-      return;
-
+  if(mouse.x < -1000 || charges.length === 0){
+    rPos.textContent = '—'; rMag.textContent = '—'; rDir.textContent = '—'; rPot.textContent = '—';
+  } else {
     const {ex, ey, v} = physicalFieldAt(mouse.x, mouse.y);
     const mag = Math.hypot(ex, ey);
     const dir = (Math.atan2(ey, ex) * 180 / Math.PI).toFixed(1);
@@ -482,19 +480,20 @@ document.getElementById('rForce');
     rPot.textContent = formatSI(v, 'V');
   }
 
-    if(selectedChargeId){
-  const sel = charges.find(c => c.id === selectedChargeId);
-      if(sel){
-    const field = physicalFieldAt(sel.x, sel.y, sel.id);
-    const fx = sel.qCoulombs * field.ex;
-    const fy = sel.qCoulombs * field.ey;
-    const fMag = Math.hypot(fx, fy);
-    const fDir = (Math.atan2(fy, fx) * 180 / Math.PI).toFixed(1);
-    document.getElementById('rForce').textContent = `${formatSI(fMag, 'N')} @ ${fDir}°`;
+  // F_net doesn't depend on mouse — always evaluate it
+  if(selectedChargeId){
+    const sel = charges.find(c => c.id === selectedChargeId);
+    if(sel){
+      const field = physicalFieldAt(sel.x, sel.y, sel.id);
+      const fx = sel.qCoulombs * field.ex;
+      const fy = sel.qCoulombs * field.ey;
+      const fMag = Math.hypot(fx, fy);
+      const fDir = (Math.atan2(fy, fx) * 180 / Math.PI).toFixed(1);
+      rForce.textContent = `${formatSI(fMag, 'N')} @ ${fDir}°`;
+    }
+  } else {
+    rForce.textContent = '—';
   }
-} else {
-  document.getElementById('rForce').textContent = '—';
-}
 }
 
   function openEditPanel(c){
