@@ -488,7 +488,7 @@
     const fy = sel.qCoulombs * field.ey;
     const fMag = Math.hypot(fx, fy);
     const fDir = (Math.atan2(fy, fx) * 180 / Math.PI).toFixed(1);
-    rForce.innerHTML = `F<sub>net</sub> = ${formatSI(fMag, 'N')} @ ${fDir}°`;
+    rForce.innerHTML = `${formatSI(fMag, 'N')} @ ${fDir}°`;
   } else {
     rForce.textContent = '−';
   }
