@@ -175,7 +175,7 @@
       <div class="row"><span>|E| field</span><span class="val" id="rMag">—</span></div>
       <div class="row"><span>direction</span><span class="val" id="rDir">—</span></div>
       <div class="row"><span>potential V</span><span class="val" id="rPot">—</span></div>
-      <div class="row"><span>F_net</span><span class="val" id="rForce">—</span></div>
+      <div class="row"><span>F<sub>net<sub></span><span class="val" id="rForce">—</span></div>
     </div>
 
     <!-- POSITION & CHARGE EDITING PANEL -->
@@ -488,7 +488,7 @@
     const fy = sel.qCoulombs * field.ey;
     const fMag = Math.hypot(fx, fy);
     const fDir = (Math.atan2(fy, fx) * 180 / Math.PI).toFixed(1);
-    rForce.textContent = `${formatSI(fMag, 'N')} @ ${fDir}°`;
+    rForce.innerHTML = `F<sub>net</sub> = ${formatSI(fMag, 'N')} @ ${fDir}°`;
   } else {
     rForce.textContent = '−';
   }
