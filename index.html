@@ -482,18 +482,19 @@
 
   // F_net doesn't depend on mouse — always evaluate it
   if(selectedChargeId){
-    const sel = charges.find(c => c.id === selectedChargeId);
-    if(sel){
-      const field = physicalFieldAt(sel.x, sel.y, sel.id);
-      const fx = sel.qCoulombs * field.ex;
-      const fy = sel.qCoulombs * field.ey;
-      const fMag = Math.hypot(fx, fy);
-      const fDir = (Math.atan2(fy, fx) * 180 / Math.PI).toFixed(1);
-      rForce.textContent = `${formatSI(fMag, 'N')} @ ${fDir}°`;
-    }
+  const sel = charges.find(c => c.id === selectedChargeId);
+  if(sel){
+    const field = physicalFieldAt(sel.x, sel.y, sel.id);
+    const fx = sel.qCoulombs * field.ex;
+    const fy = sel.qCoulombs * field.ey;
+    const fMag = Math.hypot(fx, fy);
+    const fDir = (Math.atan2(fy, fx) * 180 / Math.PI).toFixed(1);
+    rForce.textContent = `${formatSI(fMag, 'N')} @ ${fDir}°`;
   } else {
-    rForce.textContent = '—';
+    rForce.textContent = '−';
   }
+} else {
+  rForce.textContent = '−';
 }
 
   function openEditPanel(c){
