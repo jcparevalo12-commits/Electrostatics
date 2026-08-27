@@ -418,7 +418,7 @@ function visualFieldAt(px, py){
 
   function updateReadout(){
     const mPerPx   = getMetersPerPx();
-    const unitScale = parseFloat(document.getElementById('distScale').value) / 100;
+    const unitScale = parseFloat(document.getElementById('distScale').value);
     const unitName  = getUnitLabel();
 
     if(mouse.x < -1000){
