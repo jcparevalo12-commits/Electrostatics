@@ -230,47 +230,43 @@ button.insSph:hover{ background:#4AA8FF55 ; border-color:var(--ins); }
 
 /* MATH */
 
-  function physicalFieldAt(px, py){
+function physicalFieldAt(px, py){
     const mPerPx = getMetersPerPx();
     const dx = (px - cx) * mPerPx;
     const dy = (py - cy) * mPerPx;
     const r  = Math.sqrt(dx*dx + dy*dy);
-    const R  = sphere.Rpx * mPerPx;   // shell radius in meters
-    const Q  = sphere.Q;              // signed charge
+    const R  = sphere.Rpx * mPerPx;
+    const Q  = sphere.Q;
 
     if(r < 1e-12) return { ex:0, ey:0, v: REAL_K * Q / R };
 
     if (cond) {
-      if (r<R) {
+      if (r < R) {
         return { ex:0, ey:0, v: REAL_K * Q / R };
-      }
-
-      else{
-        const r2 = r ** 2
-        const E = (REAL_K * Q) / r2
+      } else {
+        const r2 = r ** 2;
+        const E = (REAL_K * Q) / r2;
         return {
           ex: (E * dx) / r,
           ey: (E * dy) / r,
           v: (REAL_K * Q) / r
         };
-    }    
-
-    else {
-      if (r<R) {
-        const r2 = r ** 2
-        const R2 = R ** 2
-        const R3 = R ** 3
-        const E = (REAL_K * Q * r) / R3
-        const V = ((REAL_K * Q) / (2 * R3)) * ((3 * R2) - r2)
-        return{
+      }
+    } else {
+      if (r < R) {
+        const r2 = r ** 2;
+        const R2 = R ** 2;
+        const R3 = R ** 3;
+        const E = (REAL_K * Q * r) / R3;
+        const V = ((REAL_K * Q) / (2 * R3)) * ((3 * R2) - r2);
+        return {
           ex: (E * dx) / r,
           ey: (E * dy) / r,
-          v: ((REAL_K * Q) / (2 * R3)) * (3R2 - r2)
-          };
-
-      else {
-        const r2 = r ** 2
-        const E = (REAL_K * Q) / r2
+          v: V
+        };
+      } else {
+        const r2 = r ** 2;
+        const E = (REAL_K * Q) / r2;
         return {
           ex: (E * dx) / r,
           ey: (E * dy) / r,
@@ -279,6 +275,7 @@ button.insSph:hover{ background:#4AA8FF55 ; border-color:var(--ins); }
       }
     }
   }
+
 
 function visualFieldAt(px, py){
     const dx = px - cx, dy = py - cy;
