@@ -416,7 +416,7 @@
     const pxR  = Math.hypot(pxDx, pxDy);
 
     const mPerPx = getMetersPerPx();
-    const unitScale = parseFloat(document.getElementById('distScale').value) / 100;
+    const unitScale = parseFloat(document.getElementById('distScale').value);
     const unitName = getUnitLabel();
 
     const dx = (pxDx * mPerPx) / unitScale;
@@ -500,7 +500,7 @@
   function openEditPanel(c){
     selectedCharge = c;
     const editPanel = document.getElementById('editPanel');
-    const unitScale = parseFloat(document.getElementById('distScale').value) / 100;
+    const unitScale = parseFloat(document.getElementById('distScale').value);
     
     document.getElementById('editTitle').textContent = `Edit Charge #${c.id}`;
     document.getElementById('editX').value = ((c.x * getMetersPerPx()) / unitScale).toFixed(2);
@@ -511,7 +511,7 @@
 
   function updateChargeFromInputs(){
     if(!selectedCharge) return;
-    const unitScale = parseFloat(document.getElementById('distScale').value) / 100;
+    const unitScale = parseFloat(document.getElementById('distScale').value);
     const xVal = parseFloat(document.getElementById('editX').value) || 0;
     const yVal = parseFloat(document.getElementById('editY').value) || 0;
     const qVal = parseFloat(document.getElementById('editQ').value) || 1;
