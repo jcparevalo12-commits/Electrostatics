@@ -231,10 +231,8 @@
     if(r < 1e-12) return { ex:0, ey:0, v: REAL_K * Q / R };
 
     if(r <= R){
-      // Inside hollow shell: E = 0, V = kQ/R (constant)
       return { ex:0, ey:0, v: REAL_K * Q / R };
     } else {
-      // Outside: behaves like point charge at center
       const r2 = r * r;
       const E  = REAL_K * Q / r2;
       return {
