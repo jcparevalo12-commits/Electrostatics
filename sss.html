@@ -64,8 +64,8 @@
   button.pos-btn.active, button.pos-btn:hover{ background:#FF6B4A22; border-color:var(--pos); color:var(--pos); }
   button.neg-btn{ border-color:#4AA8FF55; color:var(--neg); }
   button.neg-btn.active, button.neg-btn:hover{ background:#4AA8FF22; border-color:var(--neg); color:var(--neg); }
-button.condSph:hover{ background:#FF6B4A22; border-color:var(--cond);
-button.insSph:hover{ background:#4AA8FF55 ; border-color:var(--ins);
+button.condSph:hover{ background:#FF6B4A22; border-color:var(--cond); }
+button.insSph:hover{ background:#4AA8FF55 ; border-color:var(--ins); }
 
   .input-group{ display:flex; align-items:center; gap:6px; padding:0 4px; }
   .input-group label{ font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--text-dim); }
@@ -188,6 +188,7 @@ button.insSph:hover{ background:#4AA8FF55 ; border-color:var(--ins);
   let sign = 1;  // +1 or -1
   let showLines = true;
   let showHeat  = false;
+  let cond = true;
   let mouse = { x: -9999, y: -9999 };
   let flowOffset = 0;
   let dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -239,11 +240,11 @@ button.insSph:hover{ background:#4AA8FF55 ; border-color:var(--ins);
 
     if(r < 1e-12) return { ex:0, ey:0, v: REAL_K * Q / R };
 
-    let cond = true;
-    
     if (cond) {
       if (r<R) {
         return { ex:0, ey:0, v: REAL_K * Q / R };
+      }
+
       else{
         const r2 = r ** 2
         const E = (REAL_K * Q) / r2
@@ -260,26 +261,47 @@ button.insSph:hover{ background:#4AA8FF55 ; border-color:var(--ins);
         const R2 = R ** 2
         const R3 = R ** 3
         const E = (REAL_K * Q * r) / R3
-        const V = ((REAL_K * Q) / (2 * R3)) * (3R2 - r2)
+        const V = ((REAL_K * Q) / (2 * R3)) * ((3 * R2) - r2)
         return{
-          ex: (E * dx) / r
-          ey: (E * dy) / r
+          ex: (E * dx) / r,
+          ey: (E * dy) / r,
           v: ((REAL_K * Q) / (2 * R3)) * (3R2 - r2)
           };
-        }
 
+      else {
+        const r2 = r ** 2
+        const E = (REAL_K * Q) / r2
+        return {
+          ex: (E * dx) / r,
+          ey: (E * dy) / r,
+          v: (REAL_K * Q) / r
+        };
+      }
     }
   }
 
-  function visualFieldAt(px, py){
+function visualFieldAt(px, py){
     const dx = px - cx, dy = py - cy;
     const rPx = Math.sqrt(dx*dx + dy*dy);
-    if(rPx <= sphere.Rpx) return { ex:0, ey:0 };
     if(rPx < 1e-6) return { ex:0, ey:0 };
+
     const visQ = sign * 1000;
-    const r2 = rPx * rPx;
-    const E  = visQ / r2;
-    return { ex: E * dx / rPx, ey: E * dy / rPx };
+
+    if (cond) {
+      // conducting: no field inside
+      if(rPx <= sphere.Rpx) return { ex:0, ey:0 };
+      const E = visQ / (rPx * rPx);
+      return { ex: E * dx / rPx, ey: E * dy / rPx };
+    } else {
+      // insulating: field grows linearly inside
+      if(rPx <= sphere.Rpx){
+        const E = visQ * rPx / (sphere.Rpx ** 3);
+        return { ex: E * dx / rPx, ey: E * dy / rPx };
+      } else {
+        const E = visQ / (rPx * rPx);
+        return { ex: E * dx / rPx, ey: E * dy / rPx };
+      }
+    }
   }
 
   function traceStreamline(startX, startY, dir){
@@ -461,6 +483,18 @@ button.insSph:hover{ background:#4AA8FF55 ; border-color:var(--ins);
     document.getElementById('btnHeat').classList.toggle('active', showHeat);
   });
 
+document.getElementById('condSph').addEventListener('click', () => {
+    cond = true;
+     document.getElementById('condSph').classList.add('active');
+    document.getElementById('insSph').classList.remove('active');
+});
+
+
+document.getElementById('insSph').addEventListener('click', () => {
+    cond = false;
+    document.getElementById('insSph').classList.add('active');
+    document.getElementById('condSph').classList.remove('active');
+});
 
   canvas.addEventListener('mousemove', e => {
     const rect = canvas.getBoundingClientRect();
