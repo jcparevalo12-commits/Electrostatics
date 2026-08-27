@@ -18,7 +18,6 @@
     --field-dim:#5EEAD433;
     --text:#E6EDF7;
     --text-dim:#7A8BA6;
-    --accent:#5EEAD4;
   }
   *{box-sizing:border-box;}
   html,body{
@@ -29,41 +28,33 @@
     overflow:hidden;
     -webkit-font-smoothing:antialiased;
   }
-  #app{
-    display:flex; flex-direction:column;
-    height:100vh; width:100vw;
-  }
+  #app{ display:flex; flex-direction:column; height:100vh; width:100vw; }
+
   header{
     display:flex; align-items:center; justify-content:space-between;
     padding:14px 20px;
     border-bottom:1px solid var(--panel-border);
     background:var(--panel);
-    flex-shrink:0;
-    z-index:10;
+    flex-shrink:0; z-index:10;
+    flex-wrap:wrap; gap:8px;
   }
   .brand{ display:flex; align-items:baseline; gap:10px; }
   .brand-mark{
     font-family:'IBM Plex Mono', monospace;
     font-size:11px; letter-spacing:0.12em;
-    color:var(--field);
-    border:1px solid var(--field-dim);
+    color:var(--field); border:1px solid var(--field-dim);
     padding:2px 6px; border-radius:3px;
   }
   .brand-title{ font-size:16px; font-weight:600; letter-spacing:-0.01em; }
-  .brand-sub{ font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--text-dim); }
 
   .toolbar{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
   button{
     font-family:'IBM Plex Sans', sans-serif;
     font-size:12.5px; font-weight:500;
-    background:transparent;
-    color:var(--text-dim);
-    border:1px solid var(--panel-border);
-    border-radius:6px;
-    padding:7px 12px;
-    cursor:pointer;
-    transition:all .15s ease;
-    white-space:nowrap;
+    background:transparent; color:var(--text-dim);
+    border:1px solid var(--panel-border); border-radius:6px;
+    padding:7px 12px; cursor:pointer;
+    transition:all .15s ease; white-space:nowrap;
   }
   button:hover{ border-color:var(--text-dim); color:var(--text); }
   button.active{ background:var(--field-dim); border-color:var(--field); color:var(--field); }
@@ -71,7 +62,17 @@
   button.pos-btn.active, button.pos-btn:hover{ background:#FF6B4A22; border-color:var(--pos); color:var(--pos); }
   button.neg-btn{ border-color:#4AA8FF55; color:var(--neg); }
   button.neg-btn.active, button.neg-btn:hover{ background:#4AA8FF22; border-color:var(--neg); color:var(--neg); }
-  button.clear-btn:hover{ border-color:#FF6B4A; color:#FF6B4A; }
+
+  .input-group{ display:flex; align-items:center; gap:6px; padding:0 4px; }
+  .input-group label{ font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--text-dim); }
+  .input-group input, .input-group select{
+    background:var(--bg); color:var(--text);
+    border:1px solid var(--panel-border);
+    border-radius:4px; padding:4px 6px;
+    font-family:'IBM Plex Mono', monospace; font-size:11px; outline:none;
+  }
+  .input-group input:focus, .input-group select:focus{ border-color:var(--field); }
+  .divider{ width:1px; height:22px; background:var(--panel-border); margin:0 4px; }
 
   main{ position:relative; flex:1; min-height:0; }
   canvas{ display:block; width:100%; height:100%; cursor:crosshair; }
@@ -85,7 +86,7 @@
     font-family:'IBM Plex Mono', monospace;
   }
 
-  /* READOUT*/
+  /* READOUT */
   #readout{ right:16px; top:16px; padding:12px 16px; min-width:240px; }
   #readout .row{ display:flex; justify-content:space-between; gap:16px; font-size:12px; padding:2px 0; color:var(--text-dim); }
   #readout .row span.val{ color:var(--field); font-weight:500; }
@@ -93,9 +94,8 @@
     color:var(--text); font-size:11px; letter-spacing:0.08em; text-transform:uppercase;
     border-bottom:1px solid var(--panel-border); padding-bottom:6px; margin-bottom:4px;
   }
-
-
-
+  #readout .row span.inside{ color:var(--neg); font-weight:500; }
+  #readout .row span.outside{ color:var(--pos); font-weight:500; }
 </style>
 </head>
 <body>
@@ -107,10 +107,11 @@
     </div>
     <div class="toolbar">
 
+      <!-- Charge magnitude -->
       <div class="input-group">
-        <label for="Q">|q| =</label>
-        <input type="number" id="Q" value="5" min="0.001" step="0.1" style="width: 55px;">
-        <select id="Q">
+        <label>|Q| =</label>
+        <input type="number" id="qVal" value="5" min="0.001" step="0.1" style="width:55px;">
+        <select id="qUnit">
           <option value="1e-12">pC</option>
           <option value="1e-9" selected>nC</option>
           <option value="1e-6">μC</option>
@@ -119,9 +120,21 @@
         </select>
       </div>
 
+      <!-- Charge sign -->
+      <button id="btnPos" class="pos-btn active">+ charge</button>
+      <button id="btnNeg" class="neg-btn">− charge</button>
+
+      <!-- Radius -->
       <div class="input-group">
-        <label for="R">100px =</label>
-        <select id="Radius">
+        <label>R =</label>
+        <input type="number" id="rVal" value="100" min="20" max="400" step="5" style="width:60px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-dim);">px</span>
+      </div>
+
+      <!-- Scale -->
+      <div class="input-group">
+        <label>100px =</label>
+        <select id="distScale">
           <option value="1e-9">1 nm</option>
           <option value="1e-6">1 μm</option>
           <option value="1e-3">1 mm</option>
@@ -133,274 +146,339 @@
       <div class="divider"></div>
       <button id="btnLines" class="active">field lines</button>
       <button id="btnHeat">magnitude</button>
-      <div class="divider"></div>
-      <button id="btnClear" class="clear-btn">clear</button>
     </div>
   </header>
+
   <main>
     <canvas id="canvas"></canvas>
 
     <div class="panel" id="readout">
       <div class="row head"><span>cursor readout</span></div>
       <div class="row"><span>position</span><span class="val" id="rPos">—</span></div>
+      <div class="row"><span>r from center</span><span class="val" id="rDist">—</span></div>
+      <div class="row"><span>region</span><span class="val" id="rRegion">—</span></div>
       <div class="row"><span>|E| field</span><span class="val" id="rMag">—</span></div>
       <div class="row"><span>direction</span><span class="val" id="rDir">—</span></div>
       <div class="row"><span>potential V</span><span class="val" id="rPot">—</span></div>
-
+    </div>
+  </main>
+</div>
 
 <script>
 (function(){
   const canvas = document.getElementById('canvas');
   const ctx = canvas.getContext('2d');
 
-  const REAL_K = 8.98755e9; 
-  const VISUAL_K = 8990;   
+  const REAL_K = 8.98755e9;
 
+  let sphere = {
+    Q: 5e-9,     // Coulombs (positive by default)
+    Rpx: 100,    // radius in pixels
+  };
+
+  let sign = 1;  // +1 or -1
   let showLines = true;
-  let showHeat = false;
-  let measureStart = null;
-
-  let mouse = {x:-9999, y:-9999};
+  let showHeat  = false;
+  let mouse = { x: -9999, y: -9999 };
   let flowOffset = 0;
   let dpr = Math.min(window.devicePixelRatio || 1, 2);
 
+  // Canvas center (updated on resize)
+  let cx = 0, cy = 0;
+
   function resize(){
     const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * dpr;
+    canvas.width  = rect.width  * dpr;
     canvas.height = rect.height * dpr;
-    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cx = rect.width  / 2;
+    cy = rect.height / 2;
   }
   window.addEventListener('resize', resize);
   resize();
 
-  function getMetersPerPx() {
-    const scaleSelect = document.getElementById('distScale');
-    const metersPer100Px = parseFloat(scaleSelect.value);
-    return metersPer100Px / 100;
+  function getMetersPerPx(){
+    return parseFloat(document.getElementById('distScale').value) / 100;
   }
-
-  function getUnitLabel() {
-    const scaleSelect = document.getElementById('distScale');
-    return scaleSelect.options[scaleSelect.selectedIndex].text.split(' ')[1];
+  function getUnitLabel(){
+    const s = document.getElementById('distScale');
+    return s.options[s.selectedIndex].text.split(' ')[1];
   }
-
-  function formatSI(num, unit) {
-    if (Math.abs(num) === 0) return `0 ${unit}`;
+  function formatSI(num, unit){
+    if(num === 0) return `0 ${unit}`;
     const abs = Math.abs(num);
-    if (abs >= 1e9)  return `${(num / 1e9).toFixed(2)} G${unit}`;
-    if (abs >= 1e6)  return `${(num / 1e6).toFixed(2)} M${unit}`;
-    if (abs >= 1e3)  return `${(num / 1e3).toFixed(2)} k${unit}`;
-    if (abs >= 1)    return `${num.toFixed(2)} ${unit}`;
-    if (abs >= 1e-3) return `${(num * 1e3).toFixed(2)} m${unit}`;
-    if (abs >= 1e-6) return `${(num * 1e6).toFixed(2)} μ${unit}`;
-    if (abs >= 1e-9) return `${(num * 1e9).toFixed(2)} n${unit}`;
-    return `${(num * 1e12).toFixed(2)} p${unit}`;
+    if(abs >= 1e9)  return `${(num/1e9).toFixed(2)} G${unit}`;
+    if(abs >= 1e6)  return `${(num/1e6).toFixed(2)} M${unit}`;
+    if(abs >= 1e3)  return `${(num/1e3).toFixed(2)} k${unit}`;
+    if(abs >= 1)    return `${num.toFixed(2)} ${unit}`;
+    if(abs >= 1e-3) return `${(num*1e3).toFixed(2)} m${unit}`;
+    if(abs >= 1e-6) return `${(num*1e6).toFixed(2)} μ${unit}`;
+    if(abs >= 1e-9) return `${(num*1e9).toFixed(2)} n${unit}`;
+    return `${(num*1e12).toFixed(2)} p${unit}`;
   }
+
+
+/* MATH */
 
   function physicalFieldAt(px, py){
-    let ex = 0, ey = 0, v = 0;
-    const metersPerPx = getMetersPerPx();
+    const mPerPx = getMetersPerPx();
+    const dx = (px - cx) * mPerPx;
+    const dy = (py - cy) * mPerPx;
+    const r  = Math.sqrt(dx*dx + dy*dy);
+    const R  = sphere.Rpx * mPerPx;   // shell radius in meters
+    const Q  = sphere.Q;              // signed charge
 
-    for(const c of charges){
-      const dx = (px - c.x) * metersPerPx;
-      const dy = (py - c.y) * metersPerPx;
-      const r2 = dx*dx + dy*dy;
-      const r = Math.sqrt(r2);
-      if(r === 0) continue;
+    if(r < 1e-12) return { ex:0, ey:0, v: REAL_K * Q / R };
 
-      const e = REAL_K * c.qCoulombs / r2;
-      ex += e * dx / r;
-      ey += e * dy / r;
-      v += REAL_K * c.qCoulombs / r;
+    if(r <= R){
+      // Inside hollow shell: E = 0, V = kQ/R (constant)
+      return { ex:0, ey:0, v: REAL_K * Q / R };
+    } else {
+      // Outside: behaves like point charge at center
+      const r2 = r * r;
+      const E  = REAL_K * Q / r2;
+      return {
+        ex: E * dx / r,
+        ey: E * dy / r,
+        v:  REAL_K * Q / r
+      };
     }
-    return {ex, ey, v};
   }
 
-  function visualFieldAt(x, y){
-    let ex = 0, ey = 0, v = 0;
-    for(const c of charges){
-      if(c.id === excludeId) continue;
-      const dx = x - c.x, dy = y - c.y;
-      const r2 = dx*dx + dy*dy;
-      const r = Math.sqrt(r2);
-      if(r < 6) continue;
-      const visQ = (c.qCoulombs > 0 ? 1 : -1) * c.visualMag;
-      const e = VISUAL_K * visQ / r2;
-      ex += e * dx / r;
-      ey += e * dy / r;
-      v += VISUAL_K * visQ / r;
-    }
-    return {ex, ey, v};
+  function visualFieldAt(px, py){
+    const dx = px - cx, dy = py - cy;
+    const rPx = Math.sqrt(dx*dx + dy*dy);
+    if(rPx <= sphere.Rpx) return { ex:0, ey:0 }; // no field inside
+    if(rPx < 1e-6) return { ex:0, ey:0 };
+    const visQ = sign * 1000;
+    const r2 = rPx * rPx;
+    const E  = visQ / r2;
+    return { ex: E * dx / rPx, ey: E * dy / rPx };
   }
 
-  function traceStreamline(startX, startY, sign){
+  function traceStreamline(startX, startY, dir){
     const pts = [];
     let x = startX, y = startY;
-    const step = 6, maxSteps = 400;
+    const step = 6, maxSteps = 500;
     const rect = canvas.getBoundingClientRect();
-    for(let i=0;i<maxSteps;i++){
-      pts.push({x,y});
-      const {ex,ey} = visualFieldAt(x,y);
-      const mag = Math.hypot(ex,ey);
-      if(mag < 1e-6) break;
-      x += sign * step * ex/mag;
-      y += sign * step * ey/mag;
-      if(x < -20 || x > rect.width+20 || y < -20 || y > rect.height+20) { pts.push({x,y}); break; }
-      let hit = false;
-      for(const c of charges){
-        if(Math.hypot(x-c.x, y-c.y) < 14){ hit = true; break; }
-      }
-      if(hit) break;
+
+    for(let i = 0; i < maxSteps; i++){
+      pts.push({ x, y });
+      const { ex, ey } = visualFieldAt(x, y);
+      const mag = Math.hypot(ex, ey);
+      if(mag < 1e-9) break;
+      x += dir * step * ex / mag;
+      y += dir * step * ey / mag;
+      if(x < -40 || x > rect.width+40 || y < -40 || y > rect.height+40){ pts.push({x,y}); break; }
+      // Stop if we hit the shell surface (going inward)
+      if(Math.hypot(x - cx, y - cy) < sphere.Rpx - 4) break;
     }
     return pts;
   }
 
+
+/*DRAW*/
   function drawGrid(){
     const rect = canvas.getBoundingClientRect();
-    const spacing = 32;
-    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--grid');
+    ctx.strokeStyle = '#182236';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    for(let x=0; x<rect.width; x+=spacing){
-      ctx.moveTo(x+0.5,0); ctx.lineTo(x+0.5, rect.height);
+    for(let x = 0; x < rect.width; x += 32){
+      ctx.moveTo(x+0.5, 0); ctx.lineTo(x+0.5, rect.height);
     }
-    for(let y=0; y<rect.height; y+=spacing){
-      ctx.moveTo(0,y+0.5); ctx.lineTo(rect.width, y+0.5);
+    for(let y = 0; y < rect.height; y += 32){
+      ctx.moveTo(0, y+0.5); ctx.lineTo(rect.width, y+0.5);
     }
     ctx.stroke();
   }
 
-  function drawFieldLines(){
-    if(charges.length === 0) return;
-    const N = 16;
-    ctx.lineWidth = 1.4;
-    for(const c of charges){
-      if(c.qCoulombs <= 0) continue;
-      for(let i=0;i<N;i++){
-        const angle = (i/N) * Math.PI * 2;
-        const sx = c.x + Math.cos(angle)*12;
-        const sy = c.y + Math.sin(angle)*12;
-        const pts = traceStreamline(sx, sy, 1);
-        if(pts.length < 2) continue;
-        ctx.beginPath();
-        ctx.moveTo(pts[0].x, pts[0].y);
-        for(let p=1;p<pts.length;p++) ctx.lineTo(pts[p].x, pts[p].y);
-        const grad = ctx.createLinearGradient(pts[0].x,pts[0].y,pts[pts.length-1].x,pts[pts.length-1].y);
-        grad.addColorStop(0, 'rgba(94,234,212,0.85)');
-        grad.addColorStop(1, 'rgba(94,234,212,0.08)');
-        ctx.strokeStyle = grad;
-        ctx.setLineDash([5,4]);
-        ctx.lineDashOffset = -flowOffset;
-        ctx.stroke();
-        ctx.setLineDash([]);
-      }
-    }
-  }
+  function drawShell(){
+    const R = sphere.Rpx;
+    const color = sign > 0 ? '#FF6B4A' : '#4AA8FF';
+    const colorDim = sign > 0 ? 'rgba(255,107,74,0.08)' : 'rgba(74,168,255,0.08)';
 
-  function drawCharges(){
-    for(const c of charges){
-      const isPos = c.qCoulombs > 0;
-      const r = 10 + Math.min(12, c.visualMag * 1.5);
-      const color = isPos ? '#FF6B4A' : '#4AA8FF';
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.fillStyle = colorDim;
+    ctx.fill();
 
-      if(selectedCharge && selectedCharge.id === c.id){
-        ctx.strokeStyle = '#5EEAD4';
-        ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(c.x, c.y, r + 6, 0, Math.PI*2); ctx.stroke();
-      }
+    const thickness = 6;
+    ctx.lineWidth = thickness;
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = 0.7;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
 
-      ctx.fillStyle = color;
-      ctx.beginPath(); ctx.arc(c.x,c.y,r,0,Math.PI*2); ctx.fill();
-      ctx.strokeStyle = '#0A0E17';
-      ctx.lineWidth = 2;
-      ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
 
-      ctx.strokeStyle = '#0A0E17';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(c.x-4, c.y); ctx.lineTo(c.x+4, c.y);
-      if(isPos){ ctx.moveTo(c.x, c.y-4); ctx.lineTo(c.x, c.y+4); }
-      ctx.stroke();
-
-      ctx.font = "10px 'IBM Plex Mono', monospace";
-      ctx.fillStyle = '#7A8BA6';
-      ctx.textAlign = 'center';
-      const signStr = isPos ? '+' : '-';
-      ctx.fillText(`${signStr}${c.displayVal} ${c.displayUnit}`, c.x, c.y + r + 14);
-    }
-  }
-
-  // MEASUREMENT DISPLAY: (dx, dy, r)
-  function drawMeasurement(){
-    if(!measureMode || !measureStart) return;
-    const p1 = measureStart;
-    const p2 = mouse.x > -1000 ? mouse : measureStart;
-
-    const pxDx = p2.x - p1.x;
-    const pxDy = p2.y - p1.y;
-    const pxR  = Math.hypot(pxDx, pxDy);
-
-    const mPerPx = getMetersPerPx();
-    const unitScale = parseFloat(document.getElementById('distScale').value) / 100;
-    const unitName = getUnitLabel();
-
-    const dx = (pxDx * mPerPx) / unitScale;
-    const dy = (pxDy * mPerPx) / unitScale;
-    const r  = (pxR  * mPerPx) / unitScale;
-
-    // Component Lines
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
-
-    // dx line
-    ctx.strokeStyle = 'rgba(255, 107, 74, 0.6)';
-    ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p1.y); ctx.stroke();
-
-    // dy line
-    ctx.strokeStyle = 'rgba(74, 168, 255, 0.6)';
-    ctx.beginPath(); ctx.moveTo(p2.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
-
-    // Direct r line
-    ctx.strokeStyle = '#5EEAD4';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([]);
-    ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
-
-    // Labels
-    const midX = (p1.x + p2.x) / 2;
-    const midY = (p1.y + p2.y) / 2;
-
+    // Label
+    const qLabel = formatSI(Math.abs(sphere.Q), 'C');
+    const rLabel = formatSI(sphere.Rpx * getMetersPerPx(), 'm');
     ctx.font = "11px 'IBM Plex Mono', monospace";
-    ctx.fillStyle = '#5EEAD4';
+    ctx.fillStyle = '#7A8BA6';
     ctx.textAlign = 'center';
-    ctx.fillText(`r = ${r.toFixed(2)} ${unitName}`, midX, midY - 20);
-    ctx.fillStyle = '#FF6B4A';
-    ctx.fillText(`Δx = ${dx.toFixed(2)} ${unitName}`, midX, midY - 8);
-    ctx.fillStyle = '#4AA8FF';
-    ctx.fillText(`Δy = ${dy.toFixed(2)} ${unitName}`, midX, midY + 4);
+    ctx.fillText(`Q = ${sign > 0 ? '+' : '−'}${qLabel}`, cx, cy + R + 20);
+    ctx.fillText(`R = ${rLabel}`, cx, cy + R + 34);
   }
 
+  function drawFieldLines(){
+    const N = 16;
+    const R = sphere.Rpx;
+    ctx.lineWidth = 1.4;
+
+    for(let i = 0; i < N; i++){
+      const angle = (i / N) * Math.PI * 2;
+      // Start just outside the shell surface
+      const sx = cx + Math.cos(angle) * (R + 8);
+      const sy = cy + Math.sin(angle) * (R + 8);
+      // Positive charge → lines go outward; negative → inward (trace reversed)
+      const pts = traceStreamline(sx, sy, sign > 0 ? 1 : -1);
+      if(pts.length < 2) continue;
+
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for(let p = 1; p < pts.length; p++) ctx.lineTo(pts[p].x, pts[p].y);
+
+      const grad = ctx.createLinearGradient(pts[0].x, pts[0].y, pts[pts.length-1].x, pts[pts.length-1].y);
+      grad.addColorStop(0, 'rgba(94,234,212,0.85)');
+      grad.addColorStop(1, 'rgba(94,234,212,0.06)');
+      ctx.strokeStyle = grad;
+      ctx.setLineDash([5, 4]);
+      ctx.lineDashOffset = sign > 0 ? -flowOffset : flowOffset;
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  function drawHeat(){
+    const rect = canvas.getBoundingClientRect();
+    const cell = 10;
+    for(let x = 0; x < rect.width; x += cell){
+      for(let y = 0; y < rect.height; y += cell){
+        const { ex, ey } = visualFieldAt(x + cell/2, y + cell/2);
+        const mag = Math.hypot(ex, ey);
+        const t = Math.min(1, Math.log(1 + mag / 40) / 5);
+        if(t < 0.02) continue;
+        ctx.fillStyle = `rgba(94,234,212,${t * 0.35})`;
+        ctx.fillRect(x, y, cell, cell);
+      }
+    }
+  }
 
   function updateReadout(){
-  const rPos = document.getElementById('rPos');
-  const rMag = document.getElementById('rMag');
-  const rDir = document.getElementById('rDir');
-  const rPot = document.getElementById('rPot');
-
-
-  if(mouse.x < -1000 || charges.length === 0){
-    rPos.textContent = '—'; rMag.textContent = '—'; rDir.textContent = '—'; rPot.textContent = '—';
-  } else {
-    const {ex, ey, v} = physicalFieldAt(mouse.x, mouse.y);
-    const mag = Math.hypot(ex, ey);
-    const dir = (Math.atan2(ey, ex) * 180 / Math.PI).toFixed(1);
-
+    const mPerPx   = getMetersPerPx();
     const unitScale = parseFloat(document.getElementById('distScale').value) / 100;
-    const xDist = (mouse.x * getMetersPerPx()) / unitScale;
-    const yDist = (mouse.y * getMetersPerPx()) / unitScale;
+    const unitName  = getUnitLabel();
 
-    rPos.textContent = `(${xDist.toFixed(1)}, ${yDist.toFixed(1)}) ${getUnitLabel()}`;
-    rMag.textContent = formatSI(mag, 'N/C');
-    rDir.textContent = `${dir}°`;
-    rPot.textContent = formatSI(v, 'V');
+    if(mouse.x < -1000){
+      ['rPos','rDist','rRegion','rMag','rDir','rPot'].forEach(id => {
+        document.getElementById(id).textContent = '—';
+      });
+      return;
+    }
+
+    const { ex, ey, v } = physicalFieldAt(mouse.x, mouse.y);
+    const mag  = Math.hypot(ex, ey);
+    const dir  = (Math.atan2(ey, ex) * 180 / Math.PI).toFixed(1);
+
+    // Position relative to canvas
+    const xDist = ((mouse.x - cx) * mPerPx) / unitScale;
+    const yDist = ((mouse.y - cy) * mPerPx) / unitScale;
+
+    // Distance from center
+    const rPx  = Math.hypot(mouse.x - cx, mouse.y - cy);
+    const rM   = rPx * mPerPx;
+    const rDisp = rM / unitScale;
+
+    const isInside = rPx < sphere.Rpx;
+
+    document.getElementById('rPos').textContent    = `(${xDist.toFixed(1)}, ${yDist.toFixed(1)}) ${unitName}`;
+    document.getElementById('rDist').textContent   = `${rDisp.toFixed(2)} ${unitName}`;
+
+    const regionEl = document.getElementById('rRegion');
+    if(isInside){
+      regionEl.innerHTML = '<span class="inside">inside shell</span>';
+    } else {
+      regionEl.innerHTML = '<span class="outside">outside shell</span>';
+    }
+
+    document.getElementById('rMag').textContent = formatSI(mag, 'N/C');
+    document.getElementById('rDir').textContent = isInside ? '—' : `${dir}°`;
+    document.getElementById('rPot').textContent = formatSI(v, 'V');
   }
+
+  document.getElementById('btnPos').addEventListener('click', () => {
+    sign = 1;
+    sphere.Q = Math.abs(sphere.Q);
+    document.getElementById('btnPos').classList.add('active');
+    document.getElementById('btnNeg').classList.remove('active');
+  });
+  document.getElementById('btnNeg').addEventListener('click', () => {
+    sign = -1;
+    sphere.Q = -Math.abs(sphere.Q);
+    document.getElementById('btnNeg').classList.add('active');
+    document.getElementById('btnPos').classList.remove('active');
+  });
+
+  function updateQ(){
+    const qMag  = parseFloat(document.getElementById('qVal').value) || 1;
+    const qUnit = parseFloat(document.getElementById('qUnit').value);
+    sphere.Q = sign * qMag * qUnit;
+  }
+  document.getElementById('qVal').addEventListener('input', updateQ);
+  document.getElementById('qUnit').addEventListener('change', updateQ);
+
+  document.getElementById('rVal').addEventListener('input', () => {
+    sphere.Rpx = parseFloat(document.getElementById('rVal').value) || 100;
+  });
+
+  document.getElementById('btnLines').addEventListener('click', () => {
+    showLines = !showLines;
+    document.getElementById('btnLines').classList.toggle('active', showLines);
+  });
+  document.getElementById('btnHeat').addEventListener('click', () => {
+    showHeat = !showHeat;
+    document.getElementById('btnHeat').classList.toggle('active', showHeat);
+  });
+
+
+  canvas.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    mouse = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  });
+  canvas.addEventListener('mouseleave', () => { mouse = { x: -9999, y: -9999 }; });
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const t = e.touches[0];
+    mouse = { x: t.clientX - rect.left, y: t.clientY - rect.top };
+  }, { passive: false });
+  canvas.addEventListener('touchend', () => { mouse = { x: -9999, y: -9999 }; });
+
+
+  function frame(){
+    const rect = canvas.getBoundingClientRect();
+    ctx.clearRect(0, 0, rect.width, rect.height);
+    ctx.fillStyle = '#0A0E17';
+    ctx.fillRect(0, 0, rect.width, rect.height);
+
+    drawGrid();
+    if(showHeat)  drawHeat();
+    if(showLines) drawFieldLines();
+    drawShell();
+    updateReadout();
+
+    flowOffset = (flowOffset + 0.35) % 9999;
+    requestAnimationFrame(frame);
+  }
+  frame();
+
+})();
+</script>
+</body>
+</html>
