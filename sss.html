@@ -298,12 +298,12 @@ function visualFieldAt(px, py){
 
     if (cond) {
       // conducting: no field inside
-      if(rPx <= sphere.Rpx) return { ex:0, ey:0 };
+      if(rPx < sphere.Rpx) return { ex:0, ey:0 };
       const E = visQ / (rPx * rPx);
       return { ex: (E * dx) / rPx, ey: (E * dy) / rPx };
     } else {
    
-      if(rPx <= sphere.Rpx){
+      if(rPx < sphere.Rpx){
         const E = (visQ * rPx) / (sphere.Rpx ** 3);
         return { ex: (E * dx) / rPx, ey: (E * dy) / rPx };
       } else {
