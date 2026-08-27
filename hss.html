@@ -94,18 +94,6 @@
     border-bottom:1px solid var(--panel-border); padding-bottom:6px; margin-bottom:4px;
   }
 
-  /* CHARGE EDIT POPUP PANEL */
-  #editPanel{
-    top:180px; right:16px; padding:14px; width:260px; display:none; flex-direction:column; gap:10px; z-index:20;
-  }
-  #editPanel.active{ display:flex; }
-  #editPanel .title{ font-size:12px; font-weight:600; color:var(--text); border-bottom:1px solid var(--panel-border); padding-bottom:6px; }
-  .edit-row{ display:flex; align-items:center; justify-content:space-between; font-size:11px; color:var(--text-dim); }
-  .edit-row input{
-    width:80px; background:var(--bg); border:1px solid var(--panel-border);
-    border-radius:4px; color:var(--field); padding:4px 6px; font-family:'IBM Plex Mono', monospace; font-size:11px; outline:none;
-  }
-  .edit-row input:focus{ border-color:var(--field); }
 
 
 </style>
@@ -118,13 +106,11 @@
       <span class="brand-title">Hollow Spherical Shell</span>
     </div>
     <div class="toolbar">
-      <button id="btnPos" class="pos-btn active">+ charge</button>
-      <button id="btnNeg" class="neg-btn">− charge</button>
 
       <div class="input-group">
-        <label for="qVal">|q| =</label>
-        <input type="number" id="qVal" value="5" min="0.001" step="0.1" style="width: 55px;">
-        <select id="qUnit">
+        <label for="Q">|q| =</label>
+        <input type="number" id="Q" value="5" min="0.001" step="0.1" style="width: 55px;">
+        <select id="Q">
           <option value="1e-12">pC</option>
           <option value="1e-9" selected>nC</option>
           <option value="1e-6">μC</option>
@@ -134,8 +120,8 @@
       </div>
 
       <div class="input-group">
-        <label for="distScale">100px =</label>
-        <select id="distScale">
+        <label for="R">100px =</label>
+        <select id="Radius">
           <option value="1e-9">1 nm</option>
           <option value="1e-6">1 μm</option>
           <option value="1e-3">1 mm</option>
@@ -147,7 +133,6 @@
       <div class="divider"></div>
       <button id="btnLines" class="active">field lines</button>
       <button id="btnHeat">magnitude</button>
-      <button id="btnMeasure">measure distance</button>
       <div class="divider"></div>
       <button id="btnClear" class="clear-btn">clear</button>
     </div>
@@ -161,30 +146,7 @@
       <div class="row"><span>|E| field</span><span class="val" id="rMag">—</span></div>
       <div class="row"><span>direction</span><span class="val" id="rDir">—</span></div>
       <div class="row"><span>potential V</span><span class="val" id="rPot">—</span></div>
-      <div class="row"><span>F<sub>net<sub></span><span class="val" id="rForce">—</span></div>
-    </div>
 
-    <!-- POSITION & CHARGE EDITING PANEL -->
-    <div class="panel" id="editPanel">
-      <div class="title" id="editTitle">Edit Charge #1</div>
-      <div class="edit-row">
-        <label>X Position:</label>
-        <input type="number" id="editX" step="0.1">
-      </div>
-      <div class="edit-row">
-        <label>Y Position:</label>
-        <input type="number" id="editY" step="0.1">
-      </div>
-      <div class="edit-row">
-        <label>Charge (|q|):</label>
-        <input type="number" id="editQ" step="0.1">
-      </div>
-      <div style="display:flex; justify-content:flex-end; gap:6px; margin-top:4px;">
-        <button id="btnCloseEdit" style="padding:4px 8px; font-size:11px;">Close</button>
-      </div>
-    </div>
-  </main>
-</div>
 
 <script>
 (function(){
@@ -194,17 +156,10 @@
   const REAL_K = 8.98755e9; 
   const VISUAL_K = 8990;   
 
-  let charges = []; 
-  let nextId = 1;
-  let mode = 'pos';
   let showLines = true;
   let showHeat = false;
-  let measureMode = false;
   let measureStart = null;
-  let selectedCharge = null;
 
-  let dragging = null;
-  let selectedChargeId = null;
   let mouse = {x:-9999, y:-9999};
   let flowOffset = 0;
   let dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -242,7 +197,7 @@
     return `${(num * 1e12).toFixed(2)} p${unit}`;
   }
 
-  function physicalFieldAt(px, py, excludeId){
+  function physicalFieldAt(px, py){
     let ex = 0, ey = 0, v = 0;
     const metersPerPx = getMetersPerPx();
 
@@ -261,7 +216,7 @@
     return {ex, ey, v};
   }
 
-  function visualFieldAt(x, y, excludeId){
+  function visualFieldAt(x, y){
     let ex = 0, ey = 0, v = 0;
     for(const c of charges){
       if(c.id === excludeId) continue;
@@ -431,7 +386,7 @@
   const rMag = document.getElementById('rMag');
   const rDir = document.getElementById('rDir');
   const rPot = document.getElementById('rPot');
-  const rForce = document.getElementById('rForce');
+
 
   if(mouse.x < -1000 || charges.length === 0){
     rPos.textContent = '—'; rMag.textContent = '—'; rDir.textContent = '—'; rPot.textContent = '—';
@@ -449,20 +404,3 @@
     rDir.textContent = `${dir}°`;
     rPot.textContent = formatSI(v, 'V');
   }
-
-  if(selectedChargeId){
-  const sel = charges.find(c => c.id === selectedChargeId);
-  if(sel){
-    const field = physicalFieldAt(sel.x, sel.y, sel.id);
-    const fx = sel.qCoulombs * field.ex;
-    const fy = sel.qCoulombs * field.ey;
-    const fMag = Math.hypot(fx, fy);
-    const fDir = (Math.atan2(fy, fx) * 180 / Math.PI).toFixed(1);
-    rForce.innerHTML = `${formatSI(fMag, 'N')} @ ${fDir}°`;
-  } else {
-    rForce.textContent = '−';
-  }
-} else {
-  rForce.textContent = '−';
-}
-}
