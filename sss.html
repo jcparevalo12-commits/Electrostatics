@@ -447,17 +447,17 @@ function visualFieldAt(px, py){
     document.getElementById('rDist').textContent   = `${rDisp.toFixed(2)} ${unitName}`;
 
 
+  const regionEl = document.getElementById('rRegion');
     const tolPx = 2;
     let regionLabel;
     if (Math.abs(rPx - sphere.Rpx) < tolPx) {
-      regionLabel = '<span class="val">surface</span>';
+      regionLabel = '<span class="surface">on surface</span>';
     } else if (rPx < sphere.Rpx) {
       regionLabel = '<span class="inside">inside sphere</span>';
     } else {
       regionLabel = '<span class="outside">outside sphere</span>';
     }
     regionEl.innerHTML = regionLabel;
-    }
 
     document.getElementById('rMag').textContent = formatSI(mag, 'N/C');
     document.getElementById('rDir').textContent = isInside ? '—' : `${dir}°`;
