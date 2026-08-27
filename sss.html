@@ -196,16 +196,19 @@ button.insSph:hover{ background:#4AA8FF55 ; border-color:var(--ins); }
   // Canvas center (updated on resize)
   let cx = 0, cy = 0;
 
-  function resize(){
-    const rect = canvas.getBoundingClientRect();
-    canvas.width  = rect.width  * dpr;
-    canvas.height = rect.height * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    cx = rect.width  / 2;
-    cy = rect.height / 2;
-  }
-  window.addEventListener('resize', resize);
-  resize();
+function resize(){
+  const rect = canvas.getBoundingClientRect();
+  if(rect.width === 0 || rect.height === 0) return; // skip bad layout passes
+  canvas.width  = rect.width  * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  cx = rect.width  / 2;
+  cy = rect.height / 2;
+}
+window.addEventListener('resize', resize);
+window.addEventListener('load', resize);
+new ResizeObserver(resize).observe(canvas.parentElement);
+resize();
 
   function getMetersPerPx(){
     return parseFloat(document.getElementById('distScale').value) / 100;
@@ -214,6 +217,7 @@ button.insSph:hover{ background:#4AA8FF55 ; border-color:var(--ins); }
     const s = document.getElementById('distScale');
     return s.options[s.selectedIndex].text.split(' ')[1];
   }
+
   function formatSI(num, unit){
     if(num === 0) return `0 ${unit}`;
     const abs = Math.abs(num);
@@ -288,15 +292,15 @@ function visualFieldAt(px, py){
       // conducting: no field inside
       if(rPx <= sphere.Rpx) return { ex:0, ey:0 };
       const E = visQ / (rPx * rPx);
-      return { ex: E * dx / rPx, ey: E * dy / rPx };
+      return { ex: (E * dx) / rPx, ey: (E * dy) / rPx };
     } else {
-      // insulating: field grows linearly inside
+   
       if(rPx <= sphere.Rpx){
-        const E = visQ * rPx / (sphere.Rpx ** 3);
-        return { ex: E * dx / rPx, ey: E * dy / rPx };
+        const E = (visQ * rPx) / (sphere.Rpx ** 3);
+        return { ex: (E * dx) / rPx, ey: (E * dy) / rPx };
       } else {
         const E = visQ / (rPx * rPx);
-        return { ex: E * dx / rPx, ey: E * dy / rPx };
+        return { ex: (E * dx) / rPx, ey: (E * dy) / rPx };
       }
     }
   }
