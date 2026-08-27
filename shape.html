@@ -179,6 +179,23 @@
     transform: translateX(0);
   }
 
+  .card.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .soon-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    border: 1px solid var(--panel-border);
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+
   .card-name {
     font-size: 17px;
     font-weight: 600;
@@ -245,34 +262,34 @@
       </a>
 
     <!-- Card 2: Solid Sphere -->
-    <a class="card active" href="sss.html">
+    <div class="card disabled">
       <div class="card-top">
         <div class="card-icon">⚛︎</div>
         <div class="arrow">→</div>
       </div>
       <div class="card-name">Solid Sphere</div>
       <div class="card-desc"></div>
-      </a>
+      </div>
 
     <!-- Card 3: Cylinder -->
-    <a class="card active" href="ilc.html">
+    <div class="card disabled">
       <div class="card-top">
         <div class="card-icon">⚛︎</div>
         <div class="arrow">→</div>
       </div>
       <div class="card-name">Infinite Line Charge</div>
       <div class="card-desc"></div>
-      </a>
+      </div>
 
     <!-- Card 4: Infinite Plane -->
-    <a class="card active" href="ips.html">
+    <div class="card disabled" href="ips.html">
       <div class="card-top">
         <div class="card-icon">⚛︎</div>
         <div class="arrow">→</div>
       </div>
       <div class="card-name">Infinite Plane</div>
       <div class="card-desc"></div>
-      </a>
+      </div>
     </div>
 
   <div class="footer">built for interactive learning · electrostatics</div>
