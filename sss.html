@@ -242,24 +242,32 @@ button.insSph:hover{ background:#4AA8FF55 ; border-color:var(--ins);
     let cond = true;
     
     if (cond) {
-      if (r<=R) {
+      if (r<R) {
         return { ex:0, ey:0, v: REAL_K * Q / R };
-      } else if (r = R) {
-        
-      } else {  
-    
-    }
+      else{
+        const r2 = r ** 2
+        const E = (REAL_K * Q) / r2
+        return {
+          ex: (E * dx) / r,
+          ey: (E * dy) / r,
+          v: (REAL_K * Q) / r
+        };
+    }    
 
     else {
-    if (cond) {
-      if (r<=R) {
-        return { ex:0, ey:0, v: REAL_K * Q / R };
-      } else if (r = R) {
-        
-      } else {  
+      if (r<R) {
+        const r2 = r ** 2
+        const R2 = R ** 2
+        const R3 = R ** 3
+        const E = (REAL_K * Q * r) / R3
+        const V = ((REAL_K * Q) / (2 * R3)) * (3R2 - r2)
+        return{
+          ex: (E * dx) / r
+          ey: (E * dy) / r
+          v: ((REAL_K * Q) / (2 * R3)) * (3R2 - r2)
+          };
+        }
 
-
-  
     }
   }
 
@@ -310,7 +318,7 @@ button.insSph:hover{ background:#4AA8FF55 ; border-color:var(--ins);
     ctx.stroke();
   }
 
-  function drawsphere(){
+  function drawSphere(){
     const R = sphere.Rpx;
     const color = sign > 0 ? '#FF6B4A' : '#4AA8FF';
     const colorDim = sign > 0 ? 'rgba(255,107,74,0.08)' : 'rgba(74,168,255,0.08)';
@@ -341,10 +349,9 @@ button.insSph:hover{ background:#4AA8FF55 ; border-color:var(--ins);
 
     for(let i = 0; i < N; i++){
       const angle = (i / N) * Math.PI * 2;
-      // Start just outside the shell surface
       const sx = cx + Math.cos(angle) * (R + 8);
       const sy = cy + Math.sin(angle) * (R + 8);
-      // Positive charge → lines go outward; negative → inward (trace reversed)
+
       const pts = traceStreamline(sx, sy, sign > 0 ? 1 : -1);
       if(pts.length < 2) continue;
 
@@ -478,7 +485,7 @@ button.insSph:hover{ background:#4AA8FF55 ; border-color:var(--ins);
     drawGrid();
     if(showHeat)  drawHeat();
     if(showLines) drawFieldLines();
-    drawShell();
+    drawSphere();
     updateReadout();
 
     flowOffset = (flowOffset + 0.35) % 9999;
