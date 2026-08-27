@@ -470,7 +470,7 @@
     const mag = Math.hypot(ex, ey);
     const dir = (Math.atan2(ey, ex) * 180 / Math.PI).toFixed(1);
 
-    const unitScale = parseFloat(document.getElementById('distScale').value) / 100;
+    const unitScale = parseFloat(document.getElementById('distScale').value);
     const xDist = (mouse.x * getMetersPerPx()) / unitScale;
     const yDist = (mouse.y * getMetersPerPx()) / unitScale;
 
