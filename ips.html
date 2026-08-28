@@ -233,7 +233,7 @@
     const visSigma = sign * 1000;
     const E = visSigma;
     const dir = dy > 0 ? 1 : -1;
-    return { ex: 0, ey: };
+    return { ex: 0, ey: E * dir };
   }
 
   function traceStreamline(startX, startY, dir){
