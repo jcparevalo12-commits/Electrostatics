@@ -165,8 +165,7 @@
   const eps_0 = 8.854e-12;
 
   let plane = {
-    σ: 5e-9,    
-    Rpx: 100,
+    σ: 5e-9
   };
 
   let sign = 1;
@@ -219,20 +218,20 @@
     const r = Math.abs(py - cy) * mPerPx;
     if(r < 1e-12) return { ex:0, ey:0, v:0 };
     const sigma = plane.σ;
-    const E = sigma / (2 * Math.PI * eps_0 * r);
+    const E = sigma / (2 * eps_0);
     const dir = (py > cy) ? 1 : -1;  // left or right of line
     return {
       ex: 0,
-      ey:,
-      v:
+      ey: E * dir,
+      v: -(sigma / (2 * eps_0)) * Math.abs(py - cy) * mPerPx
     };
   }
 
   function visualFieldAt(px, py){
     const dy = py - cy;
-    if(Math.abs(dx) < 1e-6) return { ex:0, ey:0 };
+    if(Math.abs(dy) < 1e-6) return { ex:0, ey:0 };
     const visSigma = sign * 1000;
-    const E = visSigma / Math.abs(dx);
+    const E = visSigma;
     const dir = dy > 0 ? 1 : -1;
     return { ex: 0, ey: };
   }
@@ -277,8 +276,8 @@
 
     // vertical line through center
     ctx.beginPath();
-    ctx.moveTo(cy, 0);
-    ctx.lineTo(cy, rect.height);
+    ctx.moveTo(0, cy);
+    ctx.lineTo(rect.width, cy);
     ctx.strokeStyle = color;
     ctx.lineWidth = 3;
     ctx.globalAlpha = 0.7;
@@ -299,7 +298,7 @@
     ctx.lineWidth = 1.4;
 
     for(let i = 0; i < N; i++){
-      const x = (rect.height / (N + 1)) * (i + 1);
+      const x = (rect.width / (N + 1)) * (i + 1);
 
       // left side
       const ptsL = traceStreamline(x, cy - 8, sign > 0 ? -1 : 1);
@@ -359,7 +358,7 @@
     const yDist = ((mouse.y - cy) * mPerPx) / unitScale;
 
     // Distance from center
-    const rPx  = Math.hypot(mouse.x - cx, mouse.y - cy);
+    const rPx  = Math.abs(mouse.y - cy);
     const rM   = rPx * mPerPx;
     const rDisp = rM / unitScale;
     document.getElementById('rPos').textContent    = `(${xDist.toFixed(1)}, ${yDist.toFixed(1)}) ${unitName}`;
@@ -367,9 +366,9 @@
 
     const regionEl = document.getElementById('rRegion');
     if(mouse.y < cy){
-      regionEl.innerHTML = '<span class="inside">lower side</span>';
+      regionEl.innerHTML = '<span class="inside">above plane</span>';
     } else {
-      regionEl.innerHTML = '<span class="outside">upper side</span>';
+      regionEl.innerHTML = '<span class="outside">below plane</span>';
 }
 
     document.getElementById('rMag').textContent = formatSI(mag, 'N/C');
@@ -379,13 +378,13 @@
 
   document.getElementById('btnPos').addEventListener('click', () => {
     sign = 1;
-    sheet.σ = Math.abs(sheet.σ;
+    plane.σ = Math.abs(plane.σ);
     document.getElementById('btnPos').classList.add('active');
     document.getElementById('btnNeg').classList.remove('active');
   });
   document.getElementById('btnNeg').addEventListener('click', () => {
     sign = -1;
-    sheet.σ = -Math.abs(sheet.σ);
+    plane.σ = -Math.abs(plane.σ);
     document.getElementById('btnNeg').classList.add('active');
     document.getElementById('btnPos').classList.remove('active');
   });
@@ -393,7 +392,7 @@
   function updateσ(){
     const σMag  = parseFloat(document.getElementById('σVal').value) || 1;
     const σUnit = parseFloat(document.getElementById('σUnit').value);
-    sheet.σ = sign * σMag * σUnit;
+    plane.σ = sign * σMag * σUnit;
   }
   document.getElementById('σVal').addEventListener('input', updateσ);
   document.getElementById('σUnit').addEventListener('change', updateσ);
