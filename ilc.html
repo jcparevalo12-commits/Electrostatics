@@ -250,7 +250,6 @@
       x += dir * step * ex / mag;
       y += dir * step * ey / mag;
       if(x < -40 || x > rect.width+40 || y < -40 || y > rect.height+40){ pts.push({x,y}); break; }
-      if(Math.hypot(x - cx, y - cy) < sphere.Rpx - 4) break;
     }
     return pts;
   }
@@ -294,31 +293,32 @@
   }
 
   function drawFieldLines(){
-    const N = 16;
-    const R = sphere.Rpx;
+    const rect = canvas.getBoundingClientRect();
+    const N = 12; // number of field lines
     ctx.lineWidth = 1.4;
 
     for(let i = 0; i < N; i++){
-      const angle = (i / N) * Math.PI * 2;
-      // Start just outside the shell surface
-      const sx = cx + Math.cos(angle) * (R + 8);
-      const sy = cy + Math.sin(angle) * (R + 8);
-      // Positive charge → lines go outward; negative → inward (trace reversed)
-      const pts = traceStreamline(sx, sy, sign > 0 ? 1 : -1);
-      if(pts.length < 2) continue;
+      const y = (rect.height / (N + 1)) * (i + 1);
 
-      ctx.beginPath();
-      ctx.moveTo(pts[0].x, pts[0].y);
-      for(let p = 1; p < pts.length; p++) ctx.lineTo(pts[p].x, pts[p].y);
+      // left side
+      const ptsL = traceStreamline(cx - 8, y, sign > 0 ? -1 : 1);
+      // right side
+      const ptsR = traceStreamline(cx + 8, y, sign > 0 ? 1 : -1);
 
-      const grad = ctx.createLinearGradient(pts[0].x, pts[0].y, pts[pts.length-1].x, pts[pts.length-1].y);
-      grad.addColorStop(0, 'rgba(94,234,212,0.85)');
-      grad.addColorStop(1, 'rgba(94,234,212,0.06)');
-      ctx.strokeStyle = grad;
-      ctx.setLineDash([5, 4]);
-      ctx.lineDashOffset = sign > 0 ? -flowOffset : flowOffset;
-      ctx.stroke();
-      ctx.setLineDash([]);
+      for(const pts of [ptsL, ptsR]){
+        if(pts.length < 2) continue;
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        for(let p = 1; p < pts.length; p++) ctx.lineTo(pts[p].x, pts[p].y);
+        const grad = ctx.createLinearGradient(pts[0].x, pts[0].y, pts[pts.length-1].x, pts[pts.length-1].y);
+        grad.addColorStop(0, 'rgba(94,234,212,0.85)');
+        grad.addColorStop(1, 'rgba(94,234,212,0.06)');
+        ctx.strokeStyle = grad;
+        ctx.setLineDash([5, 4]);
+        ctx.lineDashOffset = sign > 0 ? -flowOffset : flowOffset;
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
     }
   }
 
@@ -372,7 +372,7 @@
 }
 
     document.getElementById('rMag').textContent = formatSI(mag, 'N/C');
-    document.getElementById('rDir').textContent = isInside ? '—' : `${dir}°`;
+    document.getElementById('rDir').textContent = `${dir}°`;
     document.getElementById('rPot').textContent = formatSI(v, 'V');
   }
 
@@ -392,14 +392,10 @@
   function updateλ(){
     const λMag  = parseFloat(document.getElementById('λVal').value) || 1;
     const λUnit = parseFloat(document.getElementById('λUnit').value);
-    cylinder.λ = sign * qMag * qUnit;
+    cylinder.λ = sign * λMag * λUnit;
   }
   document.getElementById('λVal').addEventListener('input', updateλ);
   document.getElementById('λUnit').addEventListener('change', updateλ);
-
-  document.getElementById('rVal').addEventListener('input', () => {
-    sphere.Rpx = parseFloat(document.getElementById('rVal').value) || 100;
-  });
 
   document.getElementById('btnLines').addEventListener('click', () => {
     showLines = !showLines;
