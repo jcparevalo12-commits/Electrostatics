@@ -1,1 +1,445 @@
-https://jcparevalo12-commits.github.io/Electrostatics/
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Infinite Plane</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0E17;
+    --panel:#121826;
+    --panel-border:#212B3D;
+    --grid:#182236;
+    --pos:#FF6B4A;
+    --neg:#4AA8FF;
+    --field:#5EEAD4;
+    --field-dim:#5EEAD433;
+    --text:#E6EDF7;
+    --text-dim:#7A8BA6;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'IBM Plex Sans', sans-serif;
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  #app{ display:flex; flex-direction:column; height:100vh; width:100vw; }
+
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 20px;
+    border-bottom:1px solid var(--panel-border);
+    background:var(--panel);
+    flex-shrink:0; z-index:10;
+    flex-wrap:wrap; gap:8px;
+  }
+  .brand{ display:flex; align-items:baseline; gap:10px; }
+  .brand-mark{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px; letter-spacing:0.12em;
+    color:var(--field); border:1px solid var(--field-dim);
+    padding:2px 6px; border-radius:3px;
+  }
+  .brand-title{ font-size:16px; font-weight:600; letter-spacing:-0.01em; }
+
+  .toolbar{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  button{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:12.5px; font-weight:500;
+    background:transparent; color:var(--text-dim);
+    border:1px solid var(--panel-border); border-radius:6px;
+    padding:7px 12px; cursor:pointer;
+    transition:all .15s ease; white-space:nowrap;
+  }
+  button:hover{ border-color:var(--text-dim); color:var(--text); }
+  button.active{ background:var(--field-dim); border-color:var(--field); color:var(--field); }
+  button.pos-btn{ border-color:#FF6B4A55; color:var(--pos); }
+  button.pos-btn.active, button.pos-btn:hover{ background:#FF6B4A22; border-color:var(--pos); color:var(--pos); }
+  button.neg-btn{ border-color:#4AA8FF55; color:var(--neg); }
+  button.neg-btn.active, button.neg-btn:hover{ background:#4AA8FF22; border-color:var(--neg); color:var(--neg); }
+
+  .input-group{ display:flex; align-items:center; gap:6px; padding:0 4px; }
+  .input-group label{ font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--text-dim); }
+  .input-group input, .input-group select{
+    background:var(--bg); color:var(--text);
+    border:1px solid var(--panel-border);
+    border-radius:4px; padding:4px 6px;
+    font-family:'IBM Plex Mono', monospace; font-size:11px; outline:none;
+  }
+  .input-group input:focus, .input-group select:focus{ border-color:var(--field); }
+  .divider{ width:1px; height:22px; background:var(--panel-border); margin:0 4px; }
+
+  main{ position:relative; flex:1; min-height:0; }
+  canvas{ display:block; width:100%; height:100%; cursor:crosshair; }
+
+  .panel{
+    position:absolute;
+    background:rgba(18,24,38,0.92);
+    border:1px solid var(--panel-border);
+    border-radius:8px;
+    backdrop-filter:blur(6px);
+    font-family:'IBM Plex Mono', monospace;
+  }
+
+  /* READOUT */
+  #readout{ right:16px; top:16px; padding:12px 16px; min-width:240px; }
+  #readout .row{ display:flex; justify-content:space-between; gap:16px; font-size:12px; padding:2px 0; color:var(--text-dim); }
+  #readout .row span.val{ color:var(--field); font-weight:500; }
+  #readout .row.head{
+    color:var(--text); font-size:11px; letter-spacing:0.08em; text-transform:uppercase;
+    border-bottom:1px solid var(--panel-border); padding-bottom:6px; margin-bottom:4px;
+  }
+  #readout .row span.inside{ color:var(--neg); font-weight:500; }
+  #readout .row span.outside{ color:var(--pos); font-weight:500; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand">
+      <span class="brand-mark">IPS</span>
+      <span class="brand-title">Infinite Plane / Sheet</span>
+    </div>
+    <div class="toolbar">
+
+      <!-- Charge sigma -->
+      <div class="input-group">
+        <label>|σ| =</label>
+        <input type="number" id="σVal" value="5" min="0.001" step="0.1" style="width:55px;">
+        <select id="σUnit">
+          <option value="1e-12">pC/m²</option>
+          <option value="1e-9" selected>nC/m²</option>
+          <option value="1e-6">μC/m</option>
+          <option value="1e-3">mC/m²</option>
+          <option value="1">C/m²</option>
+        </select>
+      </div>
+
+      <!-- Charge sign -->
+      <button id="btnPos" class="pos-btn active">+ charge</button>
+      <button id="btnNeg" class="neg-btn">− charge</button>
+
+      <!-- Scale -->
+      <div class="input-group">
+        <label>100px =</label>
+        <select id="distScale">
+          <option value="1e-9">1 nm</option>
+          <option value="1e-6">1 μm</option>
+          <option value="1e-3">1 mm</option>
+          <option value="1e-2" selected>1 cm</option>
+          <option value="1">1 m</option>
+        </select>
+      </div>
+
+      <div class="divider"></div>
+      <button id="btnLines" class="active">field lines</button>
+      <button id="btnHeat">magnitude</button>
+    </div>
+  </header>
+
+  <main>
+    <canvas id="canvas"></canvas>
+
+    <div class="panel" id="readout">
+      <div class="row head"><span>cursor readout</span></div>
+      <div class="row"><span>position</span><span class="val" id="rPos">—</span></div>
+      <div class="row"><span>r from center</span><span class="val" id="rDist">—</span></div>
+      <div class="row"><span>region</span><span class="val" id="rRegion">—</span></div>
+      <div class="row"><span>|E| field</span><span class="val" id="rMag">—</span></div>
+      <div class="row"><span>direction</span><span class="val" id="rDir">—</span></div>
+      <div class="row"><span>potential V</span><span class="val" id="rPot">—</span></div>
+    </div>
+  </main>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+
+  const eps_0 = 8.854e-12;
+
+  let plane = {
+    σ: 5e-9,    
+    Rpx: 100,
+  };
+
+  let sign = 1;
+  let showLines = true;
+  let showHeat  = false;
+  let mouse = { x: -9999, y: -9999 };
+  let flowOffset = 0;
+  let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  // Canvas center (updated on resize)
+  let cx = 0, cy = 0;
+
+  function resize(){
+    const rect = canvas.getBoundingClientRect();
+    canvas.width  = rect.width  * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cx = rect.width  / 2;
+    cy = rect.height / 2;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  function getMetersPerPx(){
+    return parseFloat(document.getElementById('distScale').value) / 100;
+  }
+
+  function getUnitLabel(){
+    const s = document.getElementById('distScale');
+    return s.options[s.selectedIndex].text.split(' ')[1];
+  }
+  function formatSI(num, unit){
+    if(num === 0) return `0 ${unit}`;
+    const abs = Math.abs(num);
+    if(abs >= 1e9)  return `${(num/1e9).toFixed(2)} G${unit}`;
+    if(abs >= 1e6)  return `${(num/1e6).toFixed(2)} M${unit}`;
+    if(abs >= 1e3)  return `${(num/1e3).toFixed(2)} k${unit}`;
+    if(abs >= 1)    return `${num.toFixed(2)} ${unit}`;
+    if(abs >= 1e-3) return `${(num*1e3).toFixed(2)} m${unit}`;
+    if(abs >= 1e-6) return `${(num*1e6).toFixed(2)} μ${unit}`;
+    if(abs >= 1e-9) return `${(num*1e9).toFixed(2)} n${unit}`;
+    return `${(num*1e12).toFixed(2)} p${unit}`;
+  }
+
+
+/* MATH */
+
+  function physicalFieldAt(px, py){
+    const mPerPx = getMetersPerPx();
+    const r = Math.abs(py - cy) * mPerPx;
+    if(r < 1e-12) return { ex:0, ey:0, v:0 };
+    const sigma = plane.σ;
+    const E = sigma / (2 * Math.PI * eps_0 * r);
+    const dir = (py > cy) ? 1 : -1;  // left or right of line
+    return {
+      ex: 0,
+      ey:,
+      v:
+    };
+  }
+
+  function visualFieldAt(px, py){
+    const dy = py - cy;
+    if(Math.abs(dx) < 1e-6) return { ex:0, ey:0 };
+    const visSigma = sign * 1000;
+    const E = visSigma / Math.abs(dx);
+    const dir = dy > 0 ? 1 : -1;
+    return { ex: 0, ey: };
+  }
+
+  function traceStreamline(startX, startY, dir){
+    const pts = [];
+    let x = startX, y = startY;
+    const step = 6, maxSteps = 500;
+    const rect = canvas.getBoundingClientRect();
+
+    for(let i = 0; i < maxSteps; i++){
+      pts.push({ x, y });
+      const { ex, ey } = visualFieldAt(x, y);
+      const mag = Math.hypot(ex, ey);
+      if(mag < 1e-9) break;
+      x += dir * step * ex / mag;
+      y += dir * step * ey / mag;
+      if(x < -40 || x > rect.width+40 || y < -40 || y > rect.height+40){ pts.push({x,y}); break; }
+    }
+    return pts;
+  }
+
+/*DRAW*/
+  function drawGrid(){
+    const rect = canvas.getBoundingClientRect();
+    ctx.strokeStyle = '#182236';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for(let x = 0; x < rect.width; x += 32){
+      ctx.moveTo(x+0.5, 0); ctx.lineTo(x+0.5, rect.height);
+    }
+    for(let y = 0; y < rect.height; y += 32){
+      ctx.moveTo(0, y+0.5); ctx.lineTo(rect.width, y+0.5);
+    }
+    ctx.stroke();
+  }
+
+
+  function drawPlane(){
+    const color = sign > 0 ? '#FF6B4A' : '#4AA8FF';
+    const rect = canvas.getBoundingClientRect();
+
+    // vertical line through center
+    ctx.beginPath();
+    ctx.moveTo(cy, 0);
+    ctx.lineTo(cy, rect.height);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
+    ctx.globalAlpha = 0.7;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // label
+    const lLabel = formatSI(Math.abs(plane.σ), 'C/m²');
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = '#7A8BA6';
+    ctx.textAlign = 'center';
+    ctx.fillText(`σ = ${sign > 0 ? '+' : '−'}${lLabel}`, cx, cy + 60);
+  }
+
+  function drawFieldLines(){
+    const rect = canvas.getBoundingClientRect();
+    const N = 12; // number of field lines
+    ctx.lineWidth = 1.4;
+
+    for(let i = 0; i < N; i++){
+      const x = (rect.height / (N + 1)) * (i + 1);
+
+      // left side
+      const ptsL = traceStreamline(x, cy - 8, sign > 0 ? -1 : 1);
+      // right side
+      const ptsR = traceStreamline(x, cy + 8, sign > 0 ? 1 : -1);
+
+      for(const pts of [ptsL, ptsR]){
+        if(pts.length < 2) continue;
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        for(let p = 1; p < pts.length; p++) ctx.lineTo(pts[p].x, pts[p].y);
+        const grad = ctx.createLinearGradient(pts[0].x, pts[0].y, pts[pts.length-1].x, pts[pts.length-1].y);
+        grad.addColorStop(0, 'rgba(94,234,212,0.85)');
+        grad.addColorStop(1, 'rgba(94,234,212,0.06)');
+        ctx.strokeStyle = grad;
+        ctx.setLineDash([5, 4]);
+        ctx.lineDashOffset = sign > 0 ? -flowOffset : flowOffset;
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+  }
+
+  function drawHeat(){
+    const rect = canvas.getBoundingClientRect();
+    const cell = 10;
+    for(let x = 0; x < rect.width; x += cell){
+      for(let y = 0; y < rect.height; y += cell){
+        const { ex, ey } = visualFieldAt(x + cell/2, y + cell/2);
+        const mag = Math.hypot(ex, ey);
+        const t = Math.min(1, Math.log(1 + mag / 40) / 5);
+        if(t < 0.02) continue;
+        ctx.fillStyle = `rgba(94,234,212,${t * 0.35})`;
+        ctx.fillRect(x, y, cell, cell);
+      }
+    }
+  }
+
+  function updateReadout(){
+    const mPerPx   = getMetersPerPx();
+    const unitScale = parseFloat(document.getElementById('distScale').value);
+    const unitName  = getUnitLabel();
+
+    if(mouse.x < -1000){
+      ['rPos','rDist','rRegion','rMag','rDir','rPot'].forEach(id => {
+        document.getElementById(id).textContent = '—';
+      });
+      return;
+    }
+
+    const { ex, ey, v } = physicalFieldAt(mouse.x, mouse.y);
+    const mag  = Math.hypot(ex, ey);
+    const dir  = (Math.atan2(ey, ex) * 180 / Math.PI).toFixed(1);
+
+    // Position relative to canvas
+    const xDist = ((mouse.x - cx) * mPerPx) / unitScale;
+    const yDist = ((mouse.y - cy) * mPerPx) / unitScale;
+
+    // Distance from center
+    const rPx  = Math.hypot(mouse.x - cx, mouse.y - cy);
+    const rM   = rPx * mPerPx;
+    const rDisp = rM / unitScale;
+    document.getElementById('rPos').textContent    = `(${xDist.toFixed(1)}, ${yDist.toFixed(1)}) ${unitName}`;
+    document.getElementById('rDist').textContent   = `${rDisp.toFixed(2)} ${unitName}`;
+
+    const regionEl = document.getElementById('rRegion');
+    if(mouse.y < cy){
+      regionEl.innerHTML = '<span class="inside">lower side</span>';
+    } else {
+      regionEl.innerHTML = '<span class="outside">upper side</span>';
+}
+
+    document.getElementById('rMag').textContent = formatSI(mag, 'N/C');
+    document.getElementById('rDir').textContent = `${dir}°`;
+    document.getElementById('rPot').textContent = formatSI(v, 'V');
+  }
+
+  document.getElementById('btnPos').addEventListener('click', () => {
+    sign = 1;
+    sheet.σ = Math.abs(sheet.σ;
+    document.getElementById('btnPos').classList.add('active');
+    document.getElementById('btnNeg').classList.remove('active');
+  });
+  document.getElementById('btnNeg').addEventListener('click', () => {
+    sign = -1;
+    sheet.σ = -Math.abs(sheet.σ);
+    document.getElementById('btnNeg').classList.add('active');
+    document.getElementById('btnPos').classList.remove('active');
+  });
+
+  function updateσ(){
+    const σMag  = parseFloat(document.getElementById('σVal').value) || 1;
+    const σUnit = parseFloat(document.getElementById('σUnit').value);
+    sheet.σ = sign * σMag * σUnit;
+  }
+  document.getElementById('σVal').addEventListener('input', updateσ);
+  document.getElementById('σUnit').addEventListener('change', updateσ);
+
+  document.getElementById('btnLines').addEventListener('click', () => {
+    showLines = !showLines;
+    document.getElementById('btnLines').classList.toggle('active', showLines);
+  });
+  document.getElementById('btnHeat').addEventListener('click', () => {
+    showHeat = !showHeat;
+    document.getElementById('btnHeat').classList.toggle('active', showHeat);
+  });
+
+
+  canvas.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    mouse = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  });
+  canvas.addEventListener('mouseleave', () => { mouse = { x: -9999, y: -9999 }; });
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const t = e.touches[0];
+    mouse = { x: t.clientX - rect.left, y: t.clientY - rect.top };
+  }, { passive: false });
+  canvas.addEventListener('touchend', () => { mouse = { x: -9999, y: -9999 }; });
+
+
+  function frame(){
+    const rect = canvas.getBoundingClientRect();
+    ctx.clearRect(0, 0, rect.width, rect.height);
+    ctx.fillStyle = '#0A0E17';
+    ctx.fillRect(0, 0, rect.width, rect.height);
+
+    drawGrid();
+    if(showHeat)  drawHeat();
+    if(showLines) drawFieldLines();
+    drawPlane ();
+    updateReadout();
+
+    flowOffset = (flowOffset + 0.35) % 9999;
+    requestAnimationFrame(frame);
+  }
+  frame();
+
+})();
+</script>
+</body>
+</html>
