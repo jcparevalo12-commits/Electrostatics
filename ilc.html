@@ -358,7 +358,7 @@
     const yDist = ((mouse.y - cy) * mPerPx) / unitScale;
 
     // Distance from center
-    const rPx  = Math.hypot(mouse.x - cx, mouse.y - cy);
+    const rPx  = Math.abs(mouse.x - cx);
     const rM   = rPx * mPerPx;
     const rDisp = rM / unitScale;
     document.getElementById('rPos').textContent    = `(${xDist.toFixed(1)}, ${yDist.toFixed(1)}) ${unitName}`;
